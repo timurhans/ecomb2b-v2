@@ -4,24 +4,24 @@
 
 {% block content %}
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+<nav class="sticky-top navbar navbar-expand-lg navbar-dark bg-light">
   <div class="container">
-      <a class="navbar-brand" href="../">Greenish</a>
-      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+      <a class="navbar-brand text-success" href="../">Greenish</a>
+      <button class="navbar-toggler bg-success " type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
           aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
       </button>
       <div class="collapse navbar-collapse" id="navbarSupportedContent">
           <ul class="navbar-nav mr-auto">
             {% for col in colecoes %}
               <div class="dropdown">
-                <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <button class="btn btn-secondary dropdown-toggle bg-light text-success" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     {{ col }}
                   </button>
                 
                 <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                     {% for cat in categorias %}
                     <div class='col my-3'>
-                      <a class="dropdown-header" href="../../?colecao={{ col }}&categoria={{ cat.cat }}">{{ cat.cat }}</a>
+                      <a class="dropdown-header text-success" href="../../?colecao={{ col }}&categoria={{ cat.cat }}">{{ cat.cat }}</a>
                         {% for sub in cat.subcats %}
                         <a class="dropdown-item" href="../../?colecao={{ col }}&categoria={{ cat.cat }}&subcategoria={{ sub }}">{{ sub }}</a>
                         {% endfor %}
@@ -31,7 +31,7 @@
               </div>
             {% endfor %}
             <li class="nav-item">
-                <a class="nav-link" href="/accounts/logout/">Logout</a>
+                <a class="nav-link text-success" href="/accounts/logout/">Logout</a>
             </li>
           </ul>
       </div>
@@ -45,12 +45,23 @@
         <!-- <div class='col my-3'> -->
             <div class="card">
                 <div class="card-body-fluid">
-                    <h5 class="card-title">{{ instance.produto }}</h5>
+                    <div class="bg-light">
+                      <!-- <h5 class="card-title">{{ instance.produto }}</h5>
+                      <h6 class="card-text text-success"> {{ instance.preco }}</h6> -->
+                      <p>
+                        <b>{{ instance.produto }} -</b> <strong class="text-success" > {{ instance.preco }}</strong><br />
+                        <small>{{ instance.sortido }} -</small><small class="text-lowercase"> {{ instance.composicao }}</small>
+                        
+                      </p>
+                      <p></p>
+                      <!-- <p class="card-text">{{ instance.sortido }}</p>
+                      <p class="card-text">{{ instance.composicao }}</p> -->
+                    </div>
+
                     <img src="{% static instance.url " " %}" width=330 height=100%>
-                    <p class="card-text"> {{ instance.preco }}</p>
                     <div class="table-responsive">
                         <table class="table">
-                            <thead class="thead-dark">
+                            <thead class="thead bg-light">
                               <tr>
                                 <th scope="col">COR</th>
                                 {% for t in instance.tams %}
@@ -86,15 +97,22 @@
 
     {% if page_obj.has_previous %}
     <li class="page-item">
-      <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
-        <span aria-hidden="true">&laquo;</span>
-        <span class="sr-only">Previous</span>
-      </a>
+    {% if selected_subcat == '' %}
+    <a class="page-link text-success" href="?page={{ page_obj.previous_page_number }}&colecao={{ selected_col }}&categoria={{ selected_cat }}" aria-label="Previous">
+      <span aria-hidden="true">&laquo;</span>
+      <span class="sr-only">Previous</span>
+    </a>
+    {% else %}
+    <a class="page-link text-success" href="?page={{ page_obj.previous_page_number }}&colecao={{ selected_col }}&categoria={{ selected_cat }}&subcategoria={{ selected_subcat }}" aria-label="Previous">
+      <span aria-hidden="true">&laquo;</span>
+      <span class="sr-only">Previous</span>
+    </a>
+    {% endif %}
     </li>
     {% endif %}
 
     <li class="page-item active">
-      <a class="page-link" href="?page={{ page_obj.number }}">{{ page_obj.number }}
+      <a class="page-link bg-success" href="?page={{ page_obj.number }}">{{ page_obj.number }}
         <span class="sr-only">(current)</span>
       </a>
     </li>
@@ -102,12 +120,12 @@
     {% if page_obj.has_next %}
     <li class="page-item">
       {% if selected_subcat == '' %}
-      <a class="page-link" href="?page={{ page_obj.next_page_number }}&colecao={{ selected_col }}&categoria={{ selected_cat }}" aria-label="Next">
+      <a class="page-link text-success" href="?page={{ page_obj.next_page_number }}&colecao={{ selected_col }}&categoria={{ selected_cat }}" aria-label="Next">
         <span aria-hidden="true">&raquo;</span>
         <span class="sr-only">Next</span>
       </a>
       {% else %}
-      <a class="page-link" href="?page={{ page_obj.next_page_number }}&colecao={{ selected_col }}&categoria={{ selected_cat }}&subcategoria={{ selected_subcat }}"" aria-label="Next">
+      <a class="page-link text-success" href="?page={{ page_obj.next_page_number }}&colecao={{ selected_col }}&categoria={{ selected_cat }}&subcategoria={{ selected_subcat }}"" aria-label="Next">
         <span aria-hidden="true">&raquo;</span>
         <span class="sr-only">Next</span>
       </a>
