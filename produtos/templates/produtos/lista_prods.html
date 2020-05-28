@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block content %}
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <div class="container">
+      <a class="navbar-brand" href="../">Greenish</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+          aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+          <ul class="navbar-nav mr-auto">
+              <li class="nav-item">
+                  <a class="nav-link" href="/accounts/logout/">Logout</a>
+              </li>
+          </ul>
+      </div>
+  </div>
+</nav>
+
+
+<div class='row'>
+
+    {% for instance in object_list %}
+        <div class='col my-3'>
+            <div class="card">
+                <div class="card-body-fluid">
+                    <h5 class="card-title">{{ instance.produto }}</h5>
+                    <img src="{% static instance.url " " %}" width=330 height=100%>
+                    <p class="card-text"> {{ instance.preco }}</p>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead class="thead-dark">
+                              <tr>
+                                <th scope="col">#</th>
+                                {% for t in instance.tams %}
+                                <th scope="col">{{ t }}</th>
+                                {% endfor %}
+                              </tr>
+                            </thead>
+                            <tbody>
+                                {% for estq in instance.estoque %}
+                              <tr>
+                                <th scope="row">{{ estq.cor }}</th>
+                                {% for q in estq.qtds %}
+                                <td> {{ q }} </td>
+                                {% endfor %}
+                              </tr>
+                              {% endfor %}
+                            </tbody>
+                        </table>
+
+                    </div>
+
+                </div>
+            </div>  
+        
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}
