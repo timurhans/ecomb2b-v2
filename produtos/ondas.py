@@ -5,6 +5,7 @@ import glob
 
 COLECOES = "('2001','1902','1901')"
 COLECAO_ATUAL = '2001'
+DRIVER = '{ODBC Driver 17 for SQL Server}'
 
 class Produto:
     pass
@@ -19,7 +20,7 @@ def produtos_disp(tabela):
     db = 'ondas800'
     user = 'sa'
     pwd = 'p$3dasony' 
-    conn = pyodbc.connect('DRIVER={SQL Server};SERVER=' + server + ';DATABASE=' + db + ';UID=' + user + ';PWD=' + pwd)
+    conn = pyodbc.connect('DRIVER=' + DRIVER + ';SERVER=' + server + ';DATABASE=' + db + ';UID=' + user + ';PWD=' + pwd)
     
     query = """
         select
@@ -123,8 +124,11 @@ def produtos_disp(tabela):
     # prods = prods.sort_values(by=['CATEGORIA_PRODUTO', 'SUBCATEGORIA_PRODUTO','DISP'],ascending=[True,True,False])
 
     conn.close()
-    return prods
+    return df_tolist(prods)
 
+
+def sort_func(e):
+    return e.estoque_tot
 
 def df_tolist(prods):
 
@@ -143,6 +147,7 @@ def df_tolist(prods):
         
         if row['PRODUTO']==prod_ant:
             
+            p.estoque_tot = p.estoque_tot + row['DISP']
             estq = Estoque()
             estq.cor = row['COR_PRODUTO']
             
@@ -158,8 +163,12 @@ def df_tolist(prods):
                 lista_produtos.append(p)
             
             p = Produto()
+            p.estoque_tot = row['DISP']
             
             p.produto = row['PRODUTO']
+            p.colecao = row['COLECAO']
+            p.categoria = row['CATEGORIA_PRODUTO']
+            p.subcategoria = row['SUBCATEGORIA_PRODUTO']
             p.qtd_tams = row['TAMANHOS_DIGITADOS']
             p.preco = 'R$ '+str(row['PRECO1'])
             if row['SORTIMENTO_COR']:
@@ -190,7 +199,9 @@ def df_tolist(prods):
         
         
         prod_ant = row['PRODUTO']
-        
+
+    lista_produtos.sort(reverse=True,key=sort_func)
+
     return lista_produtos
 
 def produtos_col_cat(tabela,colecao,categoria):
@@ -207,13 +218,16 @@ def produtos_col_cat(tabela,colecao,categoria):
         prods = cache.get(key)
 
     if colecao == 'Saldos':
-        prods = prods[prods['COLECAO']!=COLECAO_ATUAL]
+        # prods = prods[prods['COLECAO']!=COLECAO_ATUAL]
+        prods = list(filter(lambda x: x.colecao != COLECAO_ATUAL, prods))
     else:
-        prods = prods[prods['COLECAO']==colecao]
+        # prods = prods[prods['COLECAO']==colecao]
+        prods = list(filter(lambda x: x.colecao == colecao, prods))
     
-    prods = prods[prods['CATEGORIA_PRODUTO']==categoria]
+    # prods = prods[prods['CATEGORIA_PRODUTO']==categoria]
+    prods = list(filter(lambda x: x.categoria == categoria, prods))
 
-    return df_tolist(prods)
+    return prods
 
     
 
@@ -231,14 +245,18 @@ def produtos_col_subcat(tabela,colecao,categoria,subcategoria):
         prods = cache.get(key)
 
     if colecao == 'Saldos':
-        prods = prods[prods['COLECAO']!=COLECAO_ATUAL]
+        # prods = prods[prods['COLECAO']!=COLECAO_ATUAL]
+        prods = list(filter(lambda x: x.colecao != COLECAO_ATUAL, prods))
     else:
-        prods = prods[prods['COLECAO']==colecao]
+        # prods = prods[prods['COLECAO']==colecao]
+        prods = list(filter(lambda x: x.colecao == colecao, prods))
     
-    prods = prods[prods['CATEGORIA_PRODUTO']==categoria]
-    prods = prods[prods['SUBCATEGORIA_PRODUTO']==subcategoria]
+    # prods = prods[prods['CATEGORIA_PRODUTO']==categoria]
+    # prods = prods[prods['SUBCATEGORIA_PRODUTO']==subcategoria]
+    prods = list(filter(lambda x: x.categoria == categoria, prods))
+    prods = list(filter(lambda x: x.subcategoria == subcategoria, prods))
 
-    return df_tolist(prods)
+    return prods
 
 
 
@@ -252,7 +270,7 @@ def cats_subcats():
         db = 'ondas800'
         user = 'timur'
         pwd = 'p$3dasony' 
-        conn = pyodbc.connect('DRIVER={SQL Server};SERVER=' + server + ';DATABASE=' + db + ';UID=' + user + ';PWD=' + pwd)
+        conn = pyodbc.connect('DRIVER=' + DRIVER + ';SERVER=' + server + ';DATABASE=' + db + ';UID=' + user + ';PWD=' + pwd)
 
         query = """
             select distinct pc.CATEGORIA_PRODUTO, psc.SUBCATEGORIA_PRODUTO 
