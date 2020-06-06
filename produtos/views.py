@@ -2,21 +2,65 @@ from django.shortcuts import render,redirect
 from django.core.paginator import Paginator
 from django.views.generic import ListView
 from django.contrib.auth import authenticate, login, logout
+from django.http import HttpResponse
+from django.core.cache import cache
 from .ondas import (Produto,Estoque,produtos_col_cat,
 produtos_col_subcat,cats_subcats)
 from .forms import LoginForm
 import time
+import re
 
 COLECOES = ['2001','Saldos']
 # Create your views here.
 
+class Pedido():
+    pass
+
+class ItemPedido():
+    pass
 
 def product_list_view_drop(request):
 
     page_size = 12
 
+    print(request.COOKIES)
+    session = request.COOKIES.get('sessionid')
+    print(cache.get(session))
+
     if request.user.is_authenticated:
 
+        if request.method == 'POST':
+            pedido = Pedido()
+            pedido.produto = request.POST.get('produto')
+            itens = []
+            er_cor = r'@(.+)@'
+            for key, value in request.POST.items():
+                #checa se info confere com padrao cor
+                cor = re.match(er_cor,key)
+                if cor is not None:
+                    qtds = request.POST.getlist(key)
+                    qtds = [int(q) for q  in qtds ]
+                    print(qtds)
+                    #checa se itens nao estao zerados
+                    if all(i == 0 for i in qtds):
+                        continue
+                    cor = cor.group(1)
+                    item = ItemPedido()
+                    item.cor = cor
+                    item.qtds = qtds
+                    itens.append(item)
+            
+            pedido.itens = itens
+
+            if cache.get(session) is None:
+                pedidos = []
+                pedidos.append(pedido)   
+                cache.set(session, pedidos, 60*10)
+            else:
+                pedidos = cache.get(session)
+                pedidos.append(pedido)
+                cache.set(session, pedidos, 60*10)
+            return HttpResponse('<script>history.back();</script>')
 
 
         try:
@@ -57,7 +101,44 @@ def product_list_view_drop(request):
         'selected_cat' : cat,
         'selected_subcat' : subcat
         }
-        return render(request,"produtos/lista_prods_drop.html",context)
+        return render(request,"produtos/lista_prods_form.html",context)
+    else:
+        print(request)
+        return redirect('/login')
+
+def carrinho_view(request):
+
+    page_size = 12
+
+    print(request.COOKIES)
+    session = request.COOKIES.get('sessionid')
+    print(cache.get(session))
+
+    if request.user.is_authenticated:
+
+
+        queryset = cache.get(session)              
+        paginator = Paginator(queryset, page_size)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+
+        if len(queryset)>page_size:
+            is_paginated = True
+        else:
+            is_paginated = False
+
+        cats = cats_subcats()
+        context = {
+        'object_list' : queryset,
+        'categorias' : cats,
+        'colecoes' : COLECOES,
+        'page_obj': page_obj,
+        'is_paginated' : is_paginated,
+        'selected_col' : '2001',
+        'selected_cat' : 'qualquer',
+        'selected_subcat' : 'qualquer'
+        }
+        return render(request,"produtos/lista_prods_form.html",context)
     else:
         print(request)
         return redirect('/login')
