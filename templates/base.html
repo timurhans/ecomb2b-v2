@@ -15,6 +15,43 @@
 
 <body>
     
+    <nav class="sticky-top navbar navbar-expand-lg navbar-dark bg-light">
+        <div class="container">
+            <a class="navbar-brand text-success" href="../">Greenish</a>
+            <button class="navbar-toggler bg-success " type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+                aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            </button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav mr-auto">
+                  {% for col in colecoes %}
+                    <div class="dropdown">
+                      <button class="btn btn-secondary dropdown-toggle bg-light text-success" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                          {{ col }}
+                        </button>
+                      
+                      <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                          {% for cat in categorias %}
+                          <div class='col my-3'>
+                            <a class="dropdown-header text-success" href="../../?colecao={{ col }}&categoria={{ cat.cat }}">{{ cat.cat }}</a>
+                              {% for sub in cat.subcats %}
+                              <a class="dropdown-item" href="../../?colecao={{ col }}&categoria={{ cat.cat }}&subcategoria={{ sub }}">{{ sub }}</a>
+                              {% endfor %}
+                          </div>
+                          {% endfor %}
+                      </div>
+                    </div>
+                  {% endfor %}
+                  <li class="nav-item">
+                    <a class="nav-link text-success" href="/carrinho/">Carrinho</a>
+                  </li>
+                  <li class="nav-item">
+                      <a class="nav-link text-success" href="/accounts/logout/">Logout</a>
+                  </li>
+      
+                </ul>
+            </div>
+        </div>
+      </nav>
 
 
     {% block content %}

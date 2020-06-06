@@ -211,7 +211,7 @@ def produtos_col_cat(tabela,colecao,categoria):
 
     if cache.get(key) is None:
         prods = produtos_disp(tabela)        
-        cache.set(key, prods, 60*10)
+        cache.set(key, prods, 60*30)
         print('Banco')
     else:
         print('Cache')
@@ -238,7 +238,7 @@ def produtos_col_subcat(tabela,colecao,categoria,subcategoria):
 
     if cache.get(key) is None:
         prods = produtos_disp(tabela)        
-        cache.set(key, prods, 60*10)
+        cache.set(key, prods, 60*30)
         print('Banco')
     else:
         print('Cache')
