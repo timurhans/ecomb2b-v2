@@ -1,0 +1,25 @@
+{% for instance in object_list %}
+
+<b>{{ instance.produto }}</b>
+<table class="table">
+    <thead class="thead bg-light">
+      <tr>
+        <th scope="col">COR</th>
+        {% for t in instance.tams %}
+        <td scope="col">{{ t }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+        {% for estq in instance.estoque %}
+      <tr>
+        <th scope="row">{{ estq.cor }}</th>
+        {% for q in estq.qtds %}
+        <td> {{ q }} </td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+</table>
+
+{% endfor %}

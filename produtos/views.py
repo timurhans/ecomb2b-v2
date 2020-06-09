@@ -7,6 +7,13 @@ from django.core.cache import cache
 from .ondas import (Produto,Estoque,produtos_col_cat,
 produtos_col_subcat,cats_subcats)
 from .forms import LoginForm
+from reportlab.pdfgen import canvas
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+from reportlab.lib import colors
+# from django_xhtml2pdf.utils import generate_pdf
+from xhtml2pdf import pisa
+from django.template import Context
+from django.template.loader import get_template
 import time
 import re
 import ast
@@ -25,7 +32,7 @@ def adciona_carrinho(request):
     pedido.url = request.POST.get('url')
     pedido.composicao = request.POST.get('composicao')
     pedido.sortido = request.POST.get('sortido')
-    pedido.preco = request.POST.get('preco')
+    pedido.preco = round(float(request.POST.get('preco')),2)
     tams = request.POST.get('tams')
     tams = ast.literal_eval(tams)
     pedido.tams = tams
@@ -33,12 +40,14 @@ def adciona_carrinho(request):
     print(request.POST.get('tams'))
     itens = []
     er_cor = r'@(.+)@'
+    qtd_tot = 0
     for key, value in request.POST.items():
         #checa se info confere com padrao cor
         cor = re.match(er_cor,key)
         if cor is not None:
             qtds = request.POST.getlist(key)
             qtds = [int(q) for q  in qtds ]
+            qtd_tot = qtd_tot + sum(qtds)
             print(qtds)
             #checa se itens nao estao zerados
             if all(i == 0 for i in qtds):
@@ -48,9 +57,10 @@ def adciona_carrinho(request):
             item.cor = cor
             item.qtds = qtds
             itens.append(item)
-    
+    pedido.qtd_tot = qtd_tot
+    pedido.valor_tot = round(qtd_tot*pedido.preco,2)
     if len(itens)>0:
-        pedido.estoque = itens
+        pedido.estoque = itens #qtd pedido
 
         if cache.get(session) is None:
             pedidos = []
@@ -124,8 +134,6 @@ def product_list_view_drop(request):
 def carrinho_view(request):
 
 
-    page_size = 12
-
     print(request.COOKIES)
     session = request.COOKIES.get('sessionid')
     print(cache.get(session))
@@ -133,24 +141,115 @@ def carrinho_view(request):
     if request.user.is_authenticated:
 
         if request.method == 'POST':
-            produto = request.POST.get('produto')
-            pedidos = cache.get(session)
-            pedidos = list(filter(lambda x: x.produto != produto, pedidos))
-            cache.set(session, pedidos, 60*60)
+
+            if request.POST.get('processa') is None:
+
+                #exclusao carrinho
+                produto = request.POST.get('produto')
+                pedidos = cache.get(session)
+                pedidos = list(filter(lambda x: x.produto != produto, pedidos))
+                cache.set(session, pedidos, 60*60)
+            else:
+                print(request.POST.get('processa'))
+                return redirect('pedido/')
 
         queryset = cache.get(session)
+        valor_tot = round(sum([x.valor_tot for x in queryset]),2)
+        qtd_tot = sum([x.qtd_tot for x in queryset])
 
         cats = cats_subcats()
         context = {
         'object_list' : queryset,
         'categorias' : cats,
-        'colecoes' : COLECOES
+        'colecoes' : COLECOES,
+        'valor_tot' : valor_tot,
+        'qtd_tot' : qtd_tot
         }
         return render(request,"produtos/carrinho.html",context)
     else:
         print(request)
         return redirect('/login')
 
+
+def pedido_view(request):
+    
+    session = request.COOKIES.get('sessionid')
+    queryset = cache.get(session)
+    # Create the HttpResponse object with the appropriate PDF headers.
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="somefilename.pdf"'
+
+    # Create the PDF object, using the response object as its "file."
+    c = canvas.Canvas(response,(420,594))
+
+
+
+    # Draw things on the PDF. Here's where the PDF generation happens.
+    # See the ReportLab documentation for the full list of functionality.    
+    # Close the PDF object cleanly, and we're done.
+
+    marg = 32
+    for produto in queryset:
+        c.setFont("Courier", 8)
+        c.drawString(0,(594-marg),produto.produto)
+        marg = marg+20
+        cabecalho = ['COR']
+        for t in produto.tams:
+            cabecalho.append(t)
+            cabecalho = [cabecalho]
+        for ped in produto.estoque:
+            linha = []
+            linha.append(ped.cor)
+            for q in ped.qtds:
+                linha.append(q)
+            cabecalho.append(linha)
+        # marg = marg+10
+        tabela_disp = cabecalho
+        colunas = [15]
+        
+        # colunas_2 = [10]*(len(cabecalho[0])-3)
+
+        # for col in colunas_2:
+        #     colunas.append(col)
+        colunas = [18]*len(cabecalho)
+        tam_tabela = len(tabela_disp)
+        linhas = [9]*tam_tabela
+
+        marg = marg + sum(linhas)/2
+        tabela_disp = Table(tabela_disp,colWidths=colunas, rowHeights=linhas,)
+        tabela_disp.setStyle(TableStyle([
+                ('TEXTCOLOR',(0,0),(-1,-1),colors.black),                       
+                ('FONTSIZE', (0,0), (-1,-1), 6),
+                ('ALIGN',(0,0),(-1,-1),'LEFT'),
+                ('VALIGN',(0,0),(-1,-1),'TOP'),
+                ('INNERGRID', (0,0), (-1,-1), 0.1, colors.black),
+                ('BOX', (0,0), (-1,-1), 0.1, colors.black)
+                ]))
+        tabela_disp.wrapOn(c, 0, (594-marg))
+        tabela_disp.drawOn(c, 20, (594-marg))
+        marg = marg + sum(linhas)/2
+        
+    c.showPage()
+    c.save()
+    return response
+
+def generate_PDF(request):
+
+    session = request.COOKIES.get('sessionid')
+    queryset = cache.get(session)
+    data = {'object_list' : queryset}
+
+    template = get_template('produtos/pedido.html')
+    html  = template.render(data)
+
+    file = open('static/test.pdf', "w+b")
+    pisaStatus = pisa.CreatePDF(html.encode('utf-8'), dest=file,
+            encoding='utf-8')
+
+    file.seek(0)
+    pdf = file.read()
+    file.close()            
+    return HttpResponse(pdf, 'application/pdf')
 
 def login_view(request):
 

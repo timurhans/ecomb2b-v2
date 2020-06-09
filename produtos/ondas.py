@@ -170,7 +170,7 @@ def df_tolist(prods):
             p.categoria = row['CATEGORIA_PRODUTO']
             p.subcategoria = row['SUBCATEGORIA_PRODUTO']
             p.qtd_tams = row['TAMANHOS_DIGITADOS']
-            p.preco = 'R$ '+str(row['PRECO1'])
+            p.preco = row['PRECO1']
             if row['SORTIMENTO_COR']:
                 p.sortido = 'Venda Sortida'
             else:

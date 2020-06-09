@@ -4,6 +4,18 @@
 
 {% block content %}
 
+<div class="sticky-top container bg-success text-white">
+  <form method="post" target="_blank">{% csrf_token %}
+    <table class="table">
+      <tr>
+        <th scope="row" class="text-light">Qtd {{ qtd_tot }}</th>
+        <th scope="row" class="text-light">Valor R$ {{ valor_tot }}</th>
+        <td><input type="submit" id="processa" name="processa" value="Processar"></td>
+      </tr> 
+    </table>
+  </form>
+  <!-- <a> Valor {{ valor_tot }} - Qtd {{ qtd_tot }}</a> -->
+</div>
 <div class='row'>
     {% for instance in object_list %}
     <div class="col-lg-3 col-md-6 mb-4">
@@ -14,7 +26,7 @@
                       <!-- <h5 class="card-title">{{ instance.produto }}</h5>
                       <h6 class="card-text text-success"> {{ instance.preco }}</h6> -->
                       <p>
-                        <b>{{ instance.produto }} -</b> <strong class="text-success" > {{ instance.preco }}</strong><br />
+                        <b>{{ instance.produto }} -</b> <strong class="text-success" >R$ {{ instance.preco }}</strong><br />
                         <small>{{ instance.sortido }} -</small><small class="text-lowercase"> {{ instance.composicao }} </small>
                         
                       </p>
@@ -50,9 +62,17 @@
                                 {% endfor %}
                               </tr>
                               {% endfor %}
+                            </table>
+                              <table class="table">
+                              <tr>
+                                <th scope="row" class="bg-light">Total Item</th>
+                                <td> {{ instance.qtd_tot }} </td>
+                                <th scope="row" class="bg-light">Valor Item</th>
+                                <td>R$ {{ instance.valor_tot }} </td>
+                              </tr>                              
                             </tbody>
                         </table>
-                        <input type="submit" value="Excluir">
+                        <input type="submit" value="Remover">
                       </div>
                     </form>
                     
