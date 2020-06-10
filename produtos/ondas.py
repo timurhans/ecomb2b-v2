@@ -165,7 +165,9 @@ def df_tolist(prods):
             p = Produto()
             p.estoque_tot = row['DISP']
             
-            p.produto = row['PRODUTO']
+            prod = row['PRODUTO']
+            p.produto = prod
+            p.produto_modal = prod.replace(".", "z")
             p.colecao = row['COLECAO']
             p.categoria = row['CATEGORIA_PRODUTO']
             p.subcategoria = row['SUBCATEGORIA_PRODUTO']

@@ -17,7 +17,7 @@ from django.contrib import admin
 from django.contrib.auth import views
 from django.urls import path
 from produtos.views import (login_view,logout_view,
-product_list_view_drop,carrinho_view,pedido_view,generate_PDF)
+product_list_view_drop,carrinho_view,pedido_view,generate_PDF,html_pedido)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -29,4 +29,5 @@ urlpatterns = [
     path('accounts/logout/', logout_view), 
     path('carrinho/', carrinho_view),
     path('carrinho/pedido/', generate_PDF),
+    path('carrinho/pedido_teste/', html_pedido),
 ]

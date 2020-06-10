@@ -53,10 +53,10 @@
                               </tr>
                             </thead>
                             <tbody>
-                                {% for estq in instance.estoque %}
+                                {% for it in instance.itens %}
                               <tr>
-                                <th scope="row">{{ estq.cor }}</th>
-                                {% for q in estq.qtds %}
+                                <th scope="row">{{ it.cor }}</th>
+                                {% for q in it.qtds %}
                                 <td> {{ q }} </td>
                                 
                                 {% endfor %}
@@ -73,6 +73,7 @@
                             </tbody>
                         </table>
                         <input type="submit" value="Remover">
+                        <input type="submit" value="Alterar">
                       </div>
                     </form>
                     

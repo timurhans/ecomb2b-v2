@@ -1,25 +1,64 @@
+<html>
+  <head>
+    <style>
+    table, th, td {
+      border: 1px solid black;
+      border-collapse: collapse;
+      text-align :center;
+    }
+
+    td {
+    height: 25px;
+    vertical-align: middle;
+    }
+    </style>
+  </head>
+
+<h1>Pedido</h1>
+<h3>Data : {{ data }}</h3>
+
 {% for instance in object_list %}
 
 <b>{{ instance.produto }}</b>
-<table class="table">
+<table class="table table-bordered">
     <thead class="thead bg-light">
       <tr>
-        <th scope="col">COR</th>
+        <th scope="col">Cor</th>
         {% for t in instance.tams %}
         <td scope="col">{{ t }}</th>
         {% endfor %}
+        <td scope="col">Qtd</td>
+        <td scope="col">Valor</td>
       </tr>
     </thead>
     <tbody>
-        {% for estq in instance.estoque %}
+        {% for it in instance.itens %}
       <tr>
-        <th scope="row">{{ estq.cor }}</th>
-        {% for q in estq.qtds %}
+        <th scope="row">{{ it.cor }}</th>
+        {% for q in it.qtds %}
         <td> {{ q }} </td>
         {% endfor %}
+        <td> {{ it.qtd_item }} </td>
+        <td> {{ it.valor_item }} </td>
       </tr>
       {% endfor %}
+      <tr>
+        
+        {% for t in instance.tams %}
+        <td scope="col"></th>
+        {% endfor %}
+        <th scope="col">Totais</th>
+        <th scope="col">{{ instance.qtd_tot }}</th>
+        <th scope="col">{{ instance.valor_tot }}</th>
+      </tr>
     </tbody>
 </table>
-
+<br />
+<br />
+<br />
 {% endfor %}
+
+<h2>Quantidade Total : {{ qtd_total }}</h2>
+<h2>Valor Total : R$ {{ valor_total }}</h2>
+
+</html>

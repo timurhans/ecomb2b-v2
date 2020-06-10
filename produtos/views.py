@@ -15,6 +15,7 @@ from xhtml2pdf import pisa
 from django.template import Context
 from django.template.loader import get_template
 import time
+from datetime import date
 import re
 import ast
 
@@ -56,11 +57,13 @@ def adciona_carrinho(request):
             item = ItemPedido()
             item.cor = cor
             item.qtds = qtds
+            item.qtd_item = sum(qtds)
+            item.valor_item = round(item.qtd_item*pedido.preco,2)
             itens.append(item)
     pedido.qtd_tot = qtd_tot
     pedido.valor_tot = round(qtd_tot*pedido.preco,2)
     if len(itens)>0:
-        pedido.estoque = itens #qtd pedido
+        pedido.itens = itens #qtd pedido
 
         if cache.get(session) is None:
             pedidos = []
@@ -75,9 +78,9 @@ def product_list_view_drop(request):
 
     page_size = 12
 
-    print(request.COOKIES)
     session = request.COOKIES.get('sessionid')
-    print(cache.get(session))
+    lista_carrinho = cache.get(session)
+    qtd_carrinho = len(lista_carrinho)
 
     if request.user.is_authenticated:
 
@@ -108,8 +111,9 @@ def product_list_view_drop(request):
         paginator = Paginator(queryset, page_size)
         page_number = request.GET.get('page')
         page_obj = paginator.get_page(page_number)
-
-        if len(queryset)>page_size:
+        qtd_pags = paginator.num_pages
+        qtd_prods = len(queryset)
+        if qtd_prods>page_size:
             is_paginated = True
         else:
             is_paginated = False
@@ -123,9 +127,12 @@ def product_list_view_drop(request):
         'is_paginated' : is_paginated,
         'selected_col' : col,
         'selected_cat' : cat,
-        'selected_subcat' : subcat
+        'selected_subcat' : subcat,
+        'qtd_carrinho' : qtd_carrinho,
+        'qtd_pags' : qtd_pags,
+        'qtd_prods' : qtd_prods
         }
-        return render(request,"produtos/lista_prods_form.html",context)
+        return render(request,"produtos/lista_prods_pop.html",context)
     else:
         print(request)
         return redirect('/login')
@@ -134,28 +141,32 @@ def product_list_view_drop(request):
 def carrinho_view(request):
 
 
-    print(request.COOKIES)
     session = request.COOKIES.get('sessionid')
-    print(cache.get(session))
+    lista_carrinho = cache.get(session)
+    qtd_carrinho = len(lista_carrinho)
 
     if request.user.is_authenticated:
 
         if request.method == 'POST':
 
             if request.POST.get('processa') is None:
-
                 #exclusao carrinho
                 produto = request.POST.get('produto')
                 pedidos = cache.get(session)
                 pedidos = list(filter(lambda x: x.produto != produto, pedidos))
                 cache.set(session, pedidos, 60*60)
             else:
+                #processa pedido
                 print(request.POST.get('processa'))
                 return redirect('pedido/')
-
-        queryset = cache.get(session)
-        valor_tot = round(sum([x.valor_tot for x in queryset]),2)
-        qtd_tot = sum([x.qtd_tot for x in queryset])
+        try:
+            queryset = cache.get(session)
+            valor_tot = round(sum([x.valor_tot for x in queryset]),2)
+            qtd_tot = sum([x.qtd_tot for x in queryset])
+        except:
+            queryset = []
+            valor_tot = 0
+            qtd_tot = 0
 
         cats = cats_subcats()
         context = {
@@ -163,7 +174,8 @@ def carrinho_view(request):
         'categorias' : cats,
         'colecoes' : COLECOES,
         'valor_tot' : valor_tot,
-        'qtd_tot' : qtd_tot
+        'qtd_tot' : qtd_tot,
+        'qtd_carrinho' : qtd_carrinho
         }
         return render(request,"produtos/carrinho.html",context)
     else:
@@ -237,7 +249,14 @@ def generate_PDF(request):
 
     session = request.COOKIES.get('sessionid')
     queryset = cache.get(session)
-    data = {'object_list' : queryset}
+
+    valor_total_pedido = round(sum([x.valor_tot for x in queryset]),2)
+    qtd_total_pedido = sum([x.qtd_tot for x in queryset])
+    today = date.today().strftime("%d/%m/%Y")
+    data = {'object_list' : queryset,
+            'data' : today,
+            'valor_total' : valor_total_pedido,
+            'qtd_total' : qtd_total_pedido}
 
     template = get_template('produtos/pedido.html')
     html  = template.render(data)
@@ -250,6 +269,15 @@ def generate_PDF(request):
     pdf = file.read()
     file.close()            
     return HttpResponse(pdf, 'application/pdf')
+
+
+def html_pedido(request):
+
+    session = request.COOKIES.get('sessionid')
+    queryset = cache.get(session)
+    data = {'object_list' : queryset}
+
+    return render(request,"produtos/pedido.html",data)
 
 def login_view(request):
 

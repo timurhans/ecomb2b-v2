@@ -13,6 +13,14 @@
   }
 </style>
 
+{% if page_obj %}
+<h7>{{ qtd_prods }} produtos - página {{page_obj.number}} de {{qtd_pags}} </h7>
+{% else %}
+<p class="h6 text-success" style="text-align:center">Selecione uma Categoria no Menu</p>
+{% endif %}
+
+
+
 <div class='row'>
     {% for instance in page_obj %}
     <div class="col-lg-3 col-md-6 mb-4">
@@ -31,13 +39,6 @@
                       <!-- <p class="card-text">{{ instance.sortido }}</p>
                       <p class="card-text">{{ instance.composicao }}</p> -->
                     </div>
-                    <form method="post" >{% csrf_token %}
-                      <input type="hidden" id="produto" name="produto" value={{instance.produto}}>
-                      <input type="hidden" id="tams" name="tams" value= "{{instance.tams}}">
-                      <input type="hidden" id="url" name="url" value= "{{instance.url}}">
-                      <input type="hidden" id="sortido" name="sortido" value= "{{instance.sortido}}">
-                      <input type="hidden" id="composicao" name="composicao" value= "{{instance.composicao}}">
-                      <input type="hidden" id="preco" name="preco" value= "{{instance.preco}}">
                       <img src="{% static instance.url " " %}" width=330 height=100%>
                       <div class="table-responsive">
                         <table class="table table-sm">
@@ -54,16 +55,67 @@
                               <tr>
                                 <th scope="row">{{ estq.cor }}</th>
                                 {% for q in estq.qtds %}
-                                <td>{{ q }}</br><input value="0" type="number" id="number" name="@{{estq.cor}}@" min="0" max= "{{ q }}" width="3"></td>
+                                <td>{{ q }}</br></td>
                                 
                                 {% endfor %}
                               </tr>
                               {% endfor %}
                             </tbody>
                         </table>
-                        <input type="submit" value="Adcionar ao carrinho" class="bg-success text-white">
                       </div>
-                    </form>
+
+                    <button type="button" class="btn btn-success" data-toggle="modal" data-target="#X{{ instance.produto_modal }}X">
+                      Comprar
+                    </button>
+                    
+                    <!-- Modal -->
+                    <div class="modal fade" id="X{{ instance.produto_modal }}X" tabindex="-1" role="dialog" aria-labelledby="exampleModalLongTitle" aria-hidden="true">
+                      <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                          <div class="modal-header">
+                            <h5 class="modal-title" id="exampleModalLongTitle">{{ instance.produto }}</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                              <span aria-hidden="true">&times;</span>
+                            </button>
+                          </div>
+                          <div class="modal-body">
+                            <form method="post" >{% csrf_token %}
+                              <input type="hidden" id="produto" name="produto" value={{instance.produto}}>
+                              <input type="hidden" id="tams" name="tams" value= "{{instance.tams}}">
+                              <input type="hidden" id="url" name="url" value= "{{instance.url}}">
+                              <input type="hidden" id="sortido" name="sortido" value= "{{instance.sortido}}">
+                              <input type="hidden" id="composicao" name="composicao" value= "{{instance.composicao}}">
+                              <input type="hidden" id="preco" name="preco" value= "{{instance.preco}}">
+                              <img src="{% static instance.url " " %}" width=330 height=100%>
+                              <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead class="thead bg-light">
+                                      <tr>
+                                        <th scope="col">COR</th>
+                                        {% for t in instance.tams %}
+                                        <th scope="col">{{ t }}</th>
+                                        {% endfor %}
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for estq in instance.estoque %}
+                                      <tr>
+                                        <th scope="row">{{ estq.cor }}</th>
+                                        {% for q in estq.qtds %}
+                                        <td>{{ q }}</br><input value="0" type="number" id="number" name="@{{estq.cor}}@" min="0" max= "{{ q }}" width="3"></td>
+                                        
+                                        {% endfor %}
+                                      </tr>
+                                      {% endfor %}
+                                    </tbody>
+                                </table>
+                                <input type="submit" value="Adcionar ao carrinho" class="bg-success text-white">
+                              </div>
+                            </form>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                     
 
 
@@ -96,7 +148,7 @@
     {% endif %}
 
     <li class="page-item active">
-      <a class="page-link bg-success" href="?page={{ page_obj.number }}">{{ page_obj.number }}
+      <a class="page-link bg-success">{{ page_obj.number }}
         <span class="sr-only">(current)</span>
       </a>
     </li>
