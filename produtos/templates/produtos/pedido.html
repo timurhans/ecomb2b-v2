@@ -19,12 +19,12 @@
 
 {% for instance in object_list %}
 
-<b>{{ instance.produto }}</b>
+<b>{{ instance.produto.produto }}</b>
 <table class="table table-bordered">
     <thead class="thead bg-light">
       <tr>
         <th scope="col">Cor</th>
-        {% for t in instance.tams %}
+        {% for t in instance.produto.tams %}
         <td scope="col">{{ t }}</th>
         {% endfor %}
         <td scope="col">Qtd</td>
@@ -44,7 +44,7 @@
       {% endfor %}
       <tr>
         
-        {% for t in instance.tams %}
+        {% for t in instance.produto.tams %}
         <td scope="col"></th>
         {% endfor %}
         <th scope="col">Totais</th>

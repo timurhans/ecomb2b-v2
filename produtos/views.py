@@ -5,7 +5,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.http import HttpResponse
 from django.core.cache import cache
 from .ondas import (Produto,Estoque,produtos_col_cat,
-produtos_col_subcat,cats_subcats)
+produtos_col_subcat,cats_subcats,get_produto)
 from .forms import LoginForm
 from reportlab.pdfgen import canvas
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
@@ -26,19 +26,20 @@ class ItemPedido():
     pass
 
 def adciona_carrinho(request):
-    session = request.COOKIES.get('sessionid')
 
+    tabela=request.user.first_name
+    session = request.COOKIES.get('sessionid')
     pedido = Produto()
-    pedido.produto = request.POST.get('produto')
-    pedido.url = request.POST.get('url')
-    pedido.composicao = request.POST.get('composicao')
-    pedido.sortido = request.POST.get('sortido')
-    pedido.preco = round(float(request.POST.get('preco')),2)
-    tams = request.POST.get('tams')
-    tams = ast.literal_eval(tams)
-    pedido.tams = tams
-    print(request.POST.get('produto'))
-    print(request.POST.get('tams'))
+
+    produto = request.POST.get('produto')
+    pedido.produto = get_produto(produto,tabela)
+    # pedido.url = request.POST.get('url')
+    # pedido.composicao = request.POST.get('composicao')
+    # pedido.sortido = request.POST.get('sortido')
+    # pedido.preco = round(float(request.POST.get('preco')),2)
+    # tams = request.POST.get('tams')
+    # tams = ast.literal_eval(tams)
+    # pedido.tams = tams
     itens = []
     er_cor = r'@(.+)@'
     qtd_tot = 0
@@ -58,10 +59,10 @@ def adciona_carrinho(request):
             item.cor = cor
             item.qtds = qtds
             item.qtd_item = sum(qtds)
-            item.valor_item = round(item.qtd_item*pedido.preco,2)
+            item.valor_item = round(item.qtd_item*pedido.produto.preco,2)
             itens.append(item)
     pedido.qtd_tot = qtd_tot
-    pedido.valor_tot = round(qtd_tot*pedido.preco,2)
+    pedido.valor_tot = round(qtd_tot*pedido.produto.preco,2)
     if len(itens)>0:
         pedido.itens = itens #qtd pedido
 
@@ -71,7 +72,10 @@ def adciona_carrinho(request):
             cache.set(session, pedidos, 60*60)
         else:
             pedidos = cache.get(session)
-            pedidos.append(pedido)
+            if any(x.produto.produto == pedido.produto.produto for x in pedidos):
+                pedidos = [pedido if x.produto.produto == pedido.produto.produto else x for x in pedidos]
+            else:
+                pedidos.append(pedido)
             cache.set(session, pedidos, 60*60)
 
 def product_list_view_drop(request):
@@ -80,7 +84,10 @@ def product_list_view_drop(request):
 
     session = request.COOKIES.get('sessionid')
     lista_carrinho = cache.get(session)
-    qtd_carrinho = len(lista_carrinho)
+    try:
+        qtd_carrinho = len(lista_carrinho)
+    except:
+        qtd_carrinho = 0
 
     if request.user.is_authenticated:
 
@@ -143,19 +150,26 @@ def carrinho_view(request):
 
     session = request.COOKIES.get('sessionid')
     lista_carrinho = cache.get(session)
-    qtd_carrinho = len(lista_carrinho)
+    try:
+        qtd_carrinho = len(lista_carrinho)
+    except:
+        qtd_carrinho = 0
 
     if request.user.is_authenticated:
 
         if request.method == 'POST':
 
-            if request.POST.get('processa') is None:
+            if request.POST.get('altera') is not None:
+                adciona_carrinho(request)
+                return HttpResponse('<script>history.back();</script>')
+            elif request.POST.get('remove') is not None:
                 #exclusao carrinho
                 produto = request.POST.get('produto')
+                print(produto)
                 pedidos = cache.get(session)
-                pedidos = list(filter(lambda x: x.produto != produto, pedidos))
+                pedidos = list(filter(lambda x: x.produto.produto != produto, pedidos))
                 cache.set(session, pedidos, 60*60)
-            else:
+            elif request.POST.get('processa') is not None:
                 #processa pedido
                 print(request.POST.get('processa'))
                 return redirect('pedido/')

@@ -315,8 +315,24 @@ def cats_subcats():
     else:
         #Consulta Cache
         cats = cache.get(key)
-        print('Cache')   
-
-
+        print('Cache')
 
     return cats
+
+def get_produto(produto,tabela):
+
+    key = "dados-"+str(tabela)
+    print('chave : ' + key)
+
+    if cache.get(key) is None:
+        prods = produtos_disp(tabela)        
+        cache.set(key, prods, 60*30)
+        print('Banco')
+    else:
+        print('Cache')
+        prods = cache.get(key)
+
+    prods = list(filter(lambda x: x.produto == produto, prods))
+    prod = prods[0]
+
+    return prod

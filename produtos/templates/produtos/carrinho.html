@@ -26,28 +26,23 @@
                       <!-- <h5 class="card-title">{{ instance.produto }}</h5>
                       <h6 class="card-text text-success"> {{ instance.preco }}</h6> -->
                       <p>
-                        <b>{{ instance.produto }} -</b> <strong class="text-success" >R$ {{ instance.preco }}</strong><br />
-                        <small>{{ instance.sortido }} -</small><small class="text-lowercase"> {{ instance.composicao }} </small>
+                        <b>{{ instance.produto.produto }} -</b> <strong class="text-success" >R$ {{ instance.produto.preco }}</strong><br />
+                        <small>{{ instance.produto.sortido }} -</small><small class="text-lowercase"> {{ instance.produto.composicao }} </small>
                         
                       </p>
                       <p></p>
                       <!-- <p class="card-text">{{ instance.sortido }}</p>
                       <p class="card-text">{{ instance.composicao }}</p> -->
                     </div>
-                    <form method="post">{% csrf_token %}
-                      <input type="hidden" id="produto" name="produto" value={{instance.produto}}>
-                      <input type="hidden" id="tams" name="tams" value= "{{instance.tams}}">
-                      <input type="hidden" id="url" name="url" value= "{{instance.url}}">
-                      <input type="hidden" id="sortido" name="sortido" value= "{{instance.sortido}}">
-                      <input type="hidden" id="composicao" name="composicao" value= "{{instance.composicao}}">
-                      <input type="hidden" id="preco" name="preco" value= "{{instance.preco}}">
-                      <img src="{% static instance.url " " %}" width=330 height=100%>
+                    
+                      
+                      <img src="{% static instance.produto.url " " %}" width=330 height=100%>
                       <div class="table-responsive">
                         <table class="table">
                             <thead class="thead bg-light">
                               <tr>
                                 <th scope="col">COR</th>
-                                {% for t in instance.tams %}
+                                {% for t in instance.produto.tams %}
                                 <th scope="col">{{ t }}</th>
                                 {% endfor %}
                               </tr>
@@ -72,16 +67,69 @@
                               </tr>                              
                             </tbody>
                         </table>
-                        <input type="submit" value="Remover">
-                        <input type="submit" value="Alterar">
+                        <form method="post">{% csrf_token %}
+                          <input type="hidden" id="produto" name="produto" value={{instance.produto.produto}}>
+                          <input type="submit" name="remove" value="Remover">
+                          <button type="button" class="btn btn-success" data-toggle="modal" data-target="#X{{ instance.produto.produto_modal }}X">
+                            Alterar
+                          </button>
+                        </form>
                       </div>
-                    </form>
+                    
                     
 
 
                 </div>
             </div>  
         
+        </div>
+
+        <div class="modal fade" id="X{{ instance.produto.produto_modal }}X" tabindex="-1" role="dialog" aria-labelledby="exampleModalLongTitle" aria-hidden="true">
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLongTitle">{{ instance.produto.produto }}</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div class="modal-body">
+                <form method="post" >{% csrf_token %}
+                  <input type="hidden" id="produto" name="produto" value={{instance.produto.produto}}>
+                  <!-- <input type="hidden" id="tams" name="tams" value= "{{instance.tams}}">
+                  <input type="hidden" id="url" name="url" value= "{{instance.url}}">
+                  <input type="hidden" id="sortido" name="sortido" value= "{{instance.sortido}}">
+                  <input type="hidden" id="composicao" name="composicao" value= "{{instance.composicao}}">
+                  <input type="hidden" id="preco" name="preco" value= "{{instance.preco}}"> -->
+                  <img src="{% static instance.produto.url " " %}" width=330 height=100%>
+                  <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead class="thead bg-light">
+                          <tr>
+                            <th scope="col">COR</th>
+                            {% for t in instance.produto.tams %}
+                            <th scope="col">{{ t }}</th>
+                            {% endfor %}
+                          </tr>
+                        </thead>
+                        <tbody>
+                            {% for estq in instance.produto.estoque %}
+                          <tr>
+                            <th scope="row">{{ estq.cor }}</th>
+                            {% for q in estq.qtds %}
+                            <td>{{ q }}</br><input value="0" type="number" id="number" name="@{{estq.cor}}@" min="0" max= "{{ q }}" width="3"></td>
+                            
+                            {% endfor %}
+                          </tr>
+                          {% endfor %}
+                        </tbody>
+                    </table>
+                    <input type="submit" name="altera" value="Alterar" class="bg-success text-white">
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
         </div>
     {% endfor %}
 
