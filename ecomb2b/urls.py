@@ -17,14 +17,14 @@ from django.contrib import admin
 from django.contrib.auth import views
 from django.urls import path
 from produtos.views import (login_view,logout_view,
-product_list_view_drop,carrinho_view,pedido_view,generate_PDF,html_pedido)
+produtos,carrinho_view,pedido_view,generate_PDF,html_pedido)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     # path('colecao-<str:colecao>/', colecao_view),
     # path('colecao-<str:colecao>/categoria-<str:categoria>/', categoria_view),
     # path('colecao-<str:colecao>/categoria-<str:categoria>/subcategoria-<str:subcategoria>/', product_list_view),
-    path('', product_list_view_drop, name='home'),
+    path('', produtos, name='home'),
     path('login/', login_view,name='login'),
     path('accounts/logout/', logout_view), 
     path('carrinho/', carrinho_view),

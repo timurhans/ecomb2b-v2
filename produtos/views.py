@@ -17,9 +17,8 @@ from django.template.loader import get_template
 import time
 from datetime import date
 import re
-import ast
+from params.models import (ColecaoB2b,ColecaoErp)
 
-COLECOES = ['2001','Saldos']
 # Create your views here.
 
 class ItemPedido():
@@ -33,13 +32,6 @@ def adciona_carrinho(request):
 
     produto = request.POST.get('produto')
     pedido.produto = get_produto(produto,tabela)
-    # pedido.url = request.POST.get('url')
-    # pedido.composicao = request.POST.get('composicao')
-    # pedido.sortido = request.POST.get('sortido')
-    # pedido.preco = round(float(request.POST.get('preco')),2)
-    # tams = request.POST.get('tams')
-    # tams = ast.literal_eval(tams)
-    # pedido.tams = tams
     itens = []
     er_cor = r'@(.+)@'
     qtd_tot = 0
@@ -78,7 +70,13 @@ def adciona_carrinho(request):
                 pedidos.append(pedido)
             cache.set(session, pedidos, 60*60)
 
-def product_list_view_drop(request):
+def produtos(request):
+
+
+    colecoes = list(ColecaoB2b.objects.filter(active=True).order_by('ordem').values_list('title', flat=True).distinct())
+    # colecoes = []
+    # for c in cols_b2b:
+    #     colecoes.append(c)
 
     page_size = 12
 
@@ -129,7 +127,7 @@ def product_list_view_drop(request):
         context = {
         'object_list' : queryset,
         'categorias' : cats,
-        'colecoes' : COLECOES,
+        'colecoes' : colecoes,
         'page_obj': page_obj,
         'is_paginated' : is_paginated,
         'selected_col' : col,
@@ -139,7 +137,7 @@ def product_list_view_drop(request):
         'qtd_pags' : qtd_pags,
         'qtd_prods' : qtd_prods
         }
-        return render(request,"produtos/lista_prods_pop.html",context)
+        return render(request,"produtos/produtos.html",context)
     else:
         print(request)
         return redirect('/login')
@@ -147,6 +145,7 @@ def product_list_view_drop(request):
 
 def carrinho_view(request):
 
+    colecoes = list(ColecaoB2b.objects.filter(active=True).order_by('ordem').values_list('title', flat=True).distinct())
 
     session = request.COOKIES.get('sessionid')
     lista_carrinho = cache.get(session)
@@ -186,7 +185,7 @@ def carrinho_view(request):
         context = {
         'object_list' : queryset,
         'categorias' : cats,
-        'colecoes' : COLECOES,
+        'colecoes' : colecoes,
         'valor_tot' : valor_tot,
         'qtd_tot' : qtd_tot,
         'qtd_carrinho' : qtd_carrinho

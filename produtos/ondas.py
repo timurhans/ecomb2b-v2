@@ -2,9 +2,8 @@ import pandas as pd
 import pyodbc
 from django.core.cache import cache
 import glob
+from params.models import (ColecaoErp)
 
-COLECOES = "('2001','1902','1901')"
-COLECAO_ATUAL = '2001'
 DRIVER = '{ODBC Driver 17 for SQL Server}'
 
 class Produto:
@@ -12,6 +11,17 @@ class Produto:
 
 class Estoque:
     pass
+
+def lista_sql(lista):
+    lista_sql = '(\''
+    i = 0
+    for l in lista:
+        if i>0:
+            lista_sql = lista_sql+',\''
+        lista_sql = lista_sql+l+'\''
+        i = i+1
+    lista_sql = lista_sql+')'
+    return lista_sql
 
 
 def produtos_disp(tabela):
@@ -21,6 +31,11 @@ def produtos_disp(tabela):
     user = 'sa'
     pwd = 'p$3dasony' 
     conn = pyodbc.connect('DRIVER=' + DRIVER + ';SERVER=' + server + ';DATABASE=' + db + ';UID=' + user + ';PWD=' + pwd)
+
+    #seleciona somente solecoes ERP de colecoes B2B ativas
+    cols_erp = ColecaoErp.objects.filter(colecaoB2b__active=True).values_list('codigo', flat=True).distinct()
+    cols_erp = lista_sql(cols_erp)
+    
     
     query = """
         select
@@ -56,7 +71,7 @@ def produtos_disp(tabela):
         pt.TAMANHO_9,pt.TAMANHO_10,pt.TAMANHO_11,pt.TAMANHO_12,
         ep.ES1,ep.ES2,ep.ES3,ep.ES4,ep.ES5,ep.ES6,ep.ES7,ep.ES8,ep.ES9,ep.ES10,ep.ES11,ep.ES12
         order by p.PRODUTO,ep.COR_PRODUTO
-    """%(tabela,COLECOES)
+    """%(tabela,cols_erp)
     
     prods = pd.read_sql(query,conn)
     
@@ -202,7 +217,8 @@ def df_tolist(prods):
         
         prod_ant = row['PRODUTO']
 
-    lista_produtos.sort(reverse=True,key=sort_func)
+    # lista_produtos.sort(reverse=True,key=sort_func)
+    lista_produtos = sorted(lista_produtos, key = lambda x: (x.subcategoria, -x.estoque_tot))
 
     return lista_produtos
 
@@ -219,14 +235,10 @@ def produtos_col_cat(tabela,colecao,categoria):
         print('Cache')
         prods = cache.get(key)
 
-    if colecao == 'Saldos':
-        # prods = prods[prods['COLECAO']!=COLECAO_ATUAL]
-        prods = list(filter(lambda x: x.colecao != COLECAO_ATUAL, prods))
-    else:
-        # prods = prods[prods['COLECAO']==colecao]
-        prods = list(filter(lambda x: x.colecao == colecao, prods))
+    #Busca cols erp vinculadas a colecao b2b selecionada
+    cols_erp = list(ColecaoErp.objects.filter(colecaoB2b__title=colecao).values_list('codigo', flat=True).distinct())
     
-    # prods = prods[prods['CATEGORIA_PRODUTO']==categoria]
+    prods = list(filter(lambda x: x.colecao in cols_erp, prods))
     prods = list(filter(lambda x: x.categoria == categoria, prods))
 
     return prods
@@ -246,15 +258,11 @@ def produtos_col_subcat(tabela,colecao,categoria,subcategoria):
         print('Cache')
         prods = cache.get(key)
 
-    if colecao == 'Saldos':
-        # prods = prods[prods['COLECAO']!=COLECAO_ATUAL]
-        prods = list(filter(lambda x: x.colecao != COLECAO_ATUAL, prods))
-    else:
-        # prods = prods[prods['COLECAO']==colecao]
-        prods = list(filter(lambda x: x.colecao == colecao, prods))
+    #Busca cols erp vinculadas a colecao b2b selecionada
+    cols_erp = list(ColecaoErp.objects.filter(colecaoB2b__title=colecao).values_list('codigo', flat=True).distinct())
     
-    # prods = prods[prods['CATEGORIA_PRODUTO']==categoria]
-    # prods = prods[prods['SUBCATEGORIA_PRODUTO']==subcategoria]
+    prods = list(filter(lambda x: x.colecao in cols_erp, prods))
+    
     prods = list(filter(lambda x: x.categoria == categoria, prods))
     prods = list(filter(lambda x: x.subcategoria == subcategoria, prods))
 
