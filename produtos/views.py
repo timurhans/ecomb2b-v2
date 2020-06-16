@@ -330,8 +330,7 @@ def logout_view(request):
 def produtos_sem_imagem_view(request):
 
     if request.user.is_authenticated:
-        tabela=request.user.first_name
-        prods = prods_sem_imagem(tabela)
+        prods = prods_sem_imagem()
         context = {
             'produtos' : prods
         }

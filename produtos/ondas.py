@@ -3,6 +3,7 @@ import pyodbc
 from django.core.cache import cache
 import glob
 from params.models import (ColecaoErp)
+from django.contrib.auth.models import User
 
 DRIVER = '{ODBC Driver 17 for SQL Server}'
 
@@ -24,7 +25,7 @@ def lista_sql(lista):
     return lista_sql
 
 
-def produtos_disp(tabela):
+def produtos_disp():
 
     server = '192.168.2.11'
     db = 'ondas800'
@@ -35,13 +36,17 @@ def produtos_disp(tabela):
     #seleciona somente solecoes ERP de colecoes B2B ativas
     cols_erp = ColecaoErp.objects.filter(colecaoB2b__active=True).values_list('codigo', flat=True).distinct()
     cols_erp = lista_sql(cols_erp)
+
+    #seleciona somente tabelas distintas que estao cadastradas nos usuarios
+    tabelas = User.objects.all().values_list('first_name', flat=True).distinct()
+    tabelas = lista_sql(tabelas)
     
     
     query = """
         select
         --atributos produto
         p.PRODUTO,ep.COR_PRODUTO,p.SORTIMENTO_COR,cb.DESC_COR,mc.DESC_COMPOSICAO,
-        p.COLECAO,pc.CATEGORIA_PRODUTO,psc.SUBCATEGORIA_PRODUTO,
+        p.COLECAO,pc.CATEGORIA_PRODUTO,psc.SUBCATEGORIA_PRODUTO,pp.CODIGO_TAB_PRECO,
         pp.PRECO1,p.GRADE,pt.TAMANHOS_DIGITADOS,pt.TAMANHO_1,pt.TAMANHO_2,pt.TAMANHO_3,
         pt.TAMANHO_4,pt.TAMANHO_5,pt.TAMANHO_6,pt.TAMANHO_7,pt.TAMANHO_8,
         pt.TAMANHO_9,pt.TAMANHO_10,pt.TAMANHO_11,pt.TAMANHO_12,
@@ -55,7 +60,7 @@ def produtos_disp(tabela):
         from 
         ESTOQUE_PRODUTOS ep left join PRODUTOS p on p.PRODUTO = ep.PRODUTO
         left join produtos_tamanhos pt on p.GRADE=pt.GRADE
-        left join PRODUTOS_PRECOS pp on p.PRODUTO=pp.PRODUTO and pp.CODIGO_TAB_PRECO='%s'
+        left join PRODUTOS_PRECOS pp on p.PRODUTO=pp.PRODUTO and pp.CODIGO_TAB_PRECO in %s
         left join PRODUTOS_CATEGORIA pc on p.COD_CATEGORIA=pc.COD_CATEGORIA
         left join PRODUTOS_SUBCATEGORIA psc on p.COD_SUBCATEGORIA=psc.COD_SUBCATEGORIA and p.COD_CATEGORIA=psc.COD_CATEGORIA
         left join MATERIAIS_COMPOSICAO mc on mc.COMPOSICAO=p.COMPOSICAO
@@ -65,13 +70,13 @@ def produtos_disp(tabela):
         ep.ESTOQUE>0 and ep.FILIAL='ONDAS' and p.COLECAO in %s
         group by 
         p.PRODUTO,ep.COR_PRODUTO,p.SORTIMENTO_COR,cb.DESC_COR,mc.DESC_COMPOSICAO,
-        p.COLECAO,pc.CATEGORIA_PRODUTO,psc.SUBCATEGORIA_PRODUTO,
+        p.COLECAO,pc.CATEGORIA_PRODUTO,psc.SUBCATEGORIA_PRODUTO,pp.CODIGO_TAB_PRECO,
         pp.PRECO1,p.GRADE,pt.TAMANHOS_DIGITADOS,pt.TAMANHO_1,pt.TAMANHO_2,pt.TAMANHO_3,
         pt.TAMANHO_4,pt.TAMANHO_5,pt.TAMANHO_6,pt.TAMANHO_7,pt.TAMANHO_8,
         pt.TAMANHO_9,pt.TAMANHO_10,pt.TAMANHO_11,pt.TAMANHO_12,
         ep.ES1,ep.ES2,ep.ES3,ep.ES4,ep.ES5,ep.ES6,ep.ES7,ep.ES8,ep.ES9,ep.ES10,ep.ES11,ep.ES12
-        order by p.PRODUTO,ep.COR_PRODUTO
-    """%(tabela,cols_erp)
+        order by pp.CODIGO_TAB_PRECO,p.PRODUTO,ep.COR_PRODUTO
+    """%(tabelas,cols_erp)
     
     prods = pd.read_sql(query,conn)
     
@@ -95,6 +100,8 @@ def produtos_disp(tabela):
     prods['TAMANHO_10'] = prods['TAMANHO_10'].str.strip()
     prods['TAMANHO_11'] = prods['TAMANHO_11'].str.strip()
     prods['TAMANHO_12'] = prods['TAMANHO_12'].str.strip()
+    prods['CODIGO_TAB_PRECO'] = prods['CODIGO_TAB_PRECO'].astype(str)
+    prods['CODIGO_TAB_PRECO'] = prods['CODIGO_TAB_PRECO'].str.strip()
     
     prods['D1'] = prods['ES1']-prods['VE1']
     prods['D2'] = prods['ES2']-prods['VE2']
@@ -142,9 +149,6 @@ def produtos_disp(tabela):
     return prods
 
 
-def sort_func(e):
-    return e.estoque_tot
-
 def df_tolist(prods):
 
     lista_produtos =[]
@@ -183,6 +187,7 @@ def df_tolist(prods):
             prod = row['PRODUTO']
             p.produto = prod
             p.produto_modal = prod.replace(".", "z")
+            p.tabela = row['CODIGO_TAB_PRECO']
             p.colecao = row['COLECAO']
             p.categoria = row['CATEGORIA_PRODUTO']
             p.subcategoria = row['SUBCATEGORIA_PRODUTO']
@@ -217,18 +222,17 @@ def df_tolist(prods):
         
         prod_ant = row['PRODUTO']
 
-    # lista_produtos.sort(reverse=True,key=sort_func)
     lista_produtos = sorted(lista_produtos, key = lambda x: (x.subcategoria, -x.estoque_tot))
 
     return lista_produtos
 
 def produtos_col_cat(tabela,colecao,categoria):
 
-    key = "dados-"+str(tabela)
+    key = "dados"
     print('chave : ' + key)
 
     if cache.get(key) is None:
-        prods = df_tolist(produtos_disp(tabela))         
+        prods = df_tolist(produtos_disp())         
         cache.set(key, prods, 60*30)
         print('Banco')
     else:
@@ -239,7 +243,11 @@ def produtos_col_cat(tabela,colecao,categoria):
     cols_erp = list(ColecaoErp.objects.filter(colecaoB2b__title=colecao).values_list('codigo', flat=True).distinct())
     
     prods = list(filter(lambda x: x.colecao in cols_erp, prods))
+
     prods = list(filter(lambda x: x.categoria == categoria, prods))
+    print(len(prods))
+    prods = list(filter(lambda x: x.tabela == tabela, prods))
+    print(len(prods))
 
     return prods
 
@@ -247,11 +255,11 @@ def produtos_col_cat(tabela,colecao,categoria):
 
 def produtos_col_subcat(tabela,colecao,categoria,subcategoria):
 
-    key = "dados-"+str(tabela)
+    key = "dados"
     print('chave : ' + key)
 
     if cache.get(key) is None:
-        prods = df_tolist(produtos_disp(tabela))         
+        prods = df_tolist(produtos_disp())         
         cache.set(key, prods, 60*30)
         print('Banco')
     else:
@@ -265,10 +273,31 @@ def produtos_col_subcat(tabela,colecao,categoria,subcategoria):
     
     prods = list(filter(lambda x: x.categoria == categoria, prods))
     prods = list(filter(lambda x: x.subcategoria == subcategoria, prods))
+    prods = list(filter(lambda x: x.tabela == tabela, prods))
 
     return prods
 
 
+def get_produto(produto,tabela):
+
+    key = "dados"
+    print('chave : ' + key)
+
+    if cache.get(key) is None:
+        
+        prods = df_tolist(produtos_disp()) 
+        cache.set(key, prods, 60*30)
+        print('Banco')
+    else:
+        print('Cache')
+        prods = cache.get(key)
+
+    prods = list(filter(lambda x: x.produto == produto, prods))
+    prods = list(filter(lambda x: x.produto == produto, prods))
+    prods = list(filter(lambda x: x.tabela == tabela, prods))
+    prod = prods[0]
+
+    return prod
 
 def cats_subcats():
 
@@ -327,28 +356,11 @@ def cats_subcats():
 
     return cats
 
-def get_produto(produto,tabela):
-
-    key = "dados-"+str(tabela)
-    print('chave : ' + key)
-
-    if cache.get(key) is None:
-        
-        prods = df_tolist(produtos_disp(tabela)) 
-        cache.set(key, prods, 60*30)
-        print('Banco')
-    else:
-        print('Cache')
-        prods = cache.get(key)
-
-    prods = list(filter(lambda x: x.produto == produto, prods))
-    prod = prods[0]
-
-    return prod
     
-def prods_sem_imagem(tabela):
+def prods_sem_imagem():
     
-    prods = produtos_disp(tabela)
+    prods = produtos_disp()
+    
 
     lista_produtos =[]
     
@@ -361,8 +373,10 @@ def prods_sem_imagem(tabela):
                 p.cor = row['COR_PRODUTO']
                 p.colecao = row['COLECAO']
                 p.disp = row['DISP']
+                p.tabela = row['CODIGO_TAB_PRECO']
                 lista_produtos.append(p)
 
+    lista_produtos = list(filter(lambda x: x.tabela == '01', lista_produtos))
     lista_produtos = sorted(lista_produtos, key = lambda x: ( -x.disp))
     
     return lista_produtos
