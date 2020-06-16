@@ -5,7 +5,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.http import HttpResponse
 from django.core.cache import cache
 from .ondas import (Produto,Estoque,produtos_col_cat,
-produtos_col_subcat,cats_subcats,get_produto)
+produtos_col_subcat,cats_subcats,get_produto,prods_sem_imagem)
 from .forms import LoginForm
 from reportlab.pdfgen import canvas
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
@@ -326,4 +326,17 @@ def logout_view(request):
 
     logout(request)
     return redirect('home')
+
+def produtos_sem_imagem_view(request):
+
+    if request.user.is_authenticated:
+        tabela=request.user.first_name
+        prods = prods_sem_imagem(tabela)
+        context = {
+            'produtos' : prods
+        }
+        return render(request,"produtos/prods_sem_img.html",context)
+    else:
+        return redirect('/login')
+    
 

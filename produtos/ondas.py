@@ -129,7 +129,7 @@ def produtos_disp(tabela):
          prods['D5'] + prods['D6'] + prods['D7']+prods['D8']+prods['D9']
          +prods['D10']+prods['D11']+prods['D12'])
     
-    prods = prods[(prods['DISP'] > 5)]
+    prods = prods[(prods['DISP'] > 0)]
     
     
 
@@ -139,7 +139,7 @@ def produtos_disp(tabela):
     # prods = prods.sort_values(by=['CATEGORIA_PRODUTO', 'SUBCATEGORIA_PRODUTO','DISP'],ascending=[True,True,False])
 
     conn.close()
-    return df_tolist(prods)
+    return prods
 
 
 def sort_func(e):
@@ -228,7 +228,7 @@ def produtos_col_cat(tabela,colecao,categoria):
     print('chave : ' + key)
 
     if cache.get(key) is None:
-        prods = produtos_disp(tabela)        
+        prods = df_tolist(produtos_disp(tabela))         
         cache.set(key, prods, 60*30)
         print('Banco')
     else:
@@ -251,7 +251,7 @@ def produtos_col_subcat(tabela,colecao,categoria,subcategoria):
     print('chave : ' + key)
 
     if cache.get(key) is None:
-        prods = produtos_disp(tabela)        
+        prods = df_tolist(produtos_disp(tabela))         
         cache.set(key, prods, 60*30)
         print('Banco')
     else:
@@ -333,7 +333,8 @@ def get_produto(produto,tabela):
     print('chave : ' + key)
 
     if cache.get(key) is None:
-        prods = produtos_disp(tabela)        
+        
+        prods = df_tolist(produtos_disp(tabela)) 
         cache.set(key, prods, 60*30)
         print('Banco')
     else:
@@ -344,3 +345,24 @@ def get_produto(produto,tabela):
     prod = prods[0]
 
     return prod
+    
+def prods_sem_imagem(tabela):
+    
+    prods = produtos_disp(tabela)
+
+    lista_produtos =[]
+    
+    for index, row in prods.iterrows():
+        
+        #elimina produtos sem imagem
+        if not glob.glob('static/imgs/'+row['PRODUTO']+'.jpg'):
+                p = Produto()
+                p.produto = row['PRODUTO']
+                p.cor = row['COR_PRODUTO']
+                p.colecao = row['COLECAO']
+                p.disp = row['DISP']
+                lista_produtos.append(p)
+
+    lista_produtos = sorted(lista_produtos, key = lambda x: ( -x.disp))
+    
+    return lista_produtos
