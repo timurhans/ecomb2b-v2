@@ -4,14 +4,7 @@
 
 {% block content %}
 
-<style>
-  #number {
-  width: 3em;
-  }
-  #tabela {
-    font-size: 1em;
-  }
-</style>
+
 
 {% if page_obj %}
 <h7 class="text-secondary">Página {{page_obj.number}} de {{qtd_pags}} - {{ qtd_prods }} produto(s) </h7>
@@ -29,7 +22,7 @@
     {% for instance in page_obj %}
     <div class="col-lg-3 col-md-6 mb-4">
         <!-- <div class='col my-3'> -->
-            <div class="card">
+            <div class="card product-card">
                 <div class="card-body-fluid">
                     <div class="bg-light">
                       <!-- <h5 class="card-title">{{ instance.produto }}</h5>

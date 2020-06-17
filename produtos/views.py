@@ -18,6 +18,8 @@ import time
 from datetime import date
 import re
 from params.models import (ColecaoB2b,ColecaoErp)
+from django.core.files.storage import FileSystemStorage
+from django.conf import settings
 
 # Create your views here.
 
@@ -196,67 +198,6 @@ def carrinho_view(request):
         return redirect('/login')
 
 
-def pedido_view(request):
-    
-    session = request.COOKIES.get('sessionid')
-    queryset = cache.get(session)
-    # Create the HttpResponse object with the appropriate PDF headers.
-    response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = 'attachment; filename="somefilename.pdf"'
-
-    # Create the PDF object, using the response object as its "file."
-    c = canvas.Canvas(response,(420,594))
-
-
-
-    # Draw things on the PDF. Here's where the PDF generation happens.
-    # See the ReportLab documentation for the full list of functionality.    
-    # Close the PDF object cleanly, and we're done.
-
-    marg = 32
-    for produto in queryset:
-        c.setFont("Courier", 8)
-        c.drawString(0,(594-marg),produto.produto)
-        marg = marg+20
-        cabecalho = ['COR']
-        for t in produto.tams:
-            cabecalho.append(t)
-            cabecalho = [cabecalho]
-        for ped in produto.estoque:
-            linha = []
-            linha.append(ped.cor)
-            for q in ped.qtds:
-                linha.append(q)
-            cabecalho.append(linha)
-        # marg = marg+10
-        tabela_disp = cabecalho
-        colunas = [15]
-        
-        # colunas_2 = [10]*(len(cabecalho[0])-3)
-
-        # for col in colunas_2:
-        #     colunas.append(col)
-        colunas = [18]*len(cabecalho)
-        tam_tabela = len(tabela_disp)
-        linhas = [9]*tam_tabela
-
-        marg = marg + sum(linhas)/2
-        tabela_disp = Table(tabela_disp,colWidths=colunas, rowHeights=linhas,)
-        tabela_disp.setStyle(TableStyle([
-                ('TEXTCOLOR',(0,0),(-1,-1),colors.black),                       
-                ('FONTSIZE', (0,0), (-1,-1), 6),
-                ('ALIGN',(0,0),(-1,-1),'LEFT'),
-                ('VALIGN',(0,0),(-1,-1),'TOP'),
-                ('INNERGRID', (0,0), (-1,-1), 0.1, colors.black),
-                ('BOX', (0,0), (-1,-1), 0.1, colors.black)
-                ]))
-        tabela_disp.wrapOn(c, 0, (594-marg))
-        tabela_disp.drawOn(c, 20, (594-marg))
-        marg = marg + sum(linhas)/2
-        
-    c.showPage()
-    c.save()
-    return response
 
 def generate_PDF(request):
 
@@ -274,13 +215,14 @@ def generate_PDF(request):
     template = get_template('produtos/pedido.html')
     html  = template.render(data)
 
-    file = open('static/test.pdf', "w+b")
+    file_path = 'static/pdfs/'+session
+    file = open(file_path, "w+b")
     pisaStatus = pisa.CreatePDF(html.encode('utf-8'), dest=file,
             encoding='utf-8')
 
     file.seek(0)
     pdf = file.read()
-    file.close()            
+    file.close()      
     return HttpResponse(pdf, 'application/pdf')
 
 
@@ -337,5 +279,15 @@ def produtos_sem_imagem_view(request):
         return render(request,"produtos/prods_sem_img.html",context)
     else:
         return redirect('/login')
-    
+
+def upload_img(request):
+    if request.method == 'POST' and request.FILES['myfile']:
+        myfile = request.FILES['myfile']
+        fs = FileSystemStorage()
+        filename = fs.save('static/imports/'+myfile.name, myfile)
+        uploaded_file_url = fs.url(filename)
+        return render(request, 'produtos/upload.html', {
+            'uploaded_file_url': uploaded_file_url
+        })
+    return render(request, 'produtos/upload.html')
 

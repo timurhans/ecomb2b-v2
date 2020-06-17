@@ -380,3 +380,4 @@ def prods_sem_imagem():
     lista_produtos = sorted(lista_produtos, key = lambda x: ( -x.disp))
     
     return lista_produtos
+
