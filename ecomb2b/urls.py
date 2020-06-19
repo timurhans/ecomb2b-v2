@@ -18,7 +18,7 @@ from django.contrib.auth import views
 from django.urls import path
 from produtos.views import (login_view,logout_view,
 produtos,carrinho_view,generate_PDF,html_pedido,
-produtos_sem_imagem_view,upload_img)
+produtos_sem_imagem_view,upload_img,limpa_cache)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -33,4 +33,5 @@ urlpatterns = [
     path('carrinho/pedido/', generate_PDF),
     path('carrinho/pedido_teste/', html_pedido),
     path('upload/', upload_img),
+    path('limpa_cache/', limpa_cache),
 ]

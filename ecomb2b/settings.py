@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_user_agents',
     'produtos',
     'params'
 ]
@@ -53,6 +54,10 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+MIDDLEWARE_CLASSES = (
+    'django_user_agents.middleware.UserAgentMiddleware',
+)
 
 ROOT_URLCONF = 'ecomb2b.urls'
 
@@ -91,6 +96,8 @@ CACHES = {
         'LOCATION': '127.0.0.1:11211',
     }
 }
+
+USER_AGENTS_CACHE = 'default'
 
 # Password validation
 # https://docs.djangoproject.com/en/2.1/ref/settings/#auth-password-validators

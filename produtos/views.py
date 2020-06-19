@@ -17,9 +17,12 @@ from django.template.loader import get_template
 import time
 from datetime import date
 import re
-from params.models import (ColecaoB2b,ColecaoErp)
+from params.models import (ColecaoB2b,ColecaoErp,Banner)
 from django.core.files.storage import FileSystemStorage
 from django.conf import settings
+import os, zipfile
+import glob
+import shutil
 
 # Create your views here.
 
@@ -74,11 +77,8 @@ def adciona_carrinho(request):
 
 def produtos(request):
 
-
     colecoes = list(ColecaoB2b.objects.filter(active=True).order_by('ordem').values_list('title', flat=True).distinct())
-    # colecoes = []
-    # for c in cols_b2b:
-    #     colecoes.append(c)
+    banners = Banner.objects.all().order_by('ordem')
 
     page_size = 12
 
@@ -137,7 +137,8 @@ def produtos(request):
         'selected_subcat' : subcat,
         'qtd_carrinho' : qtd_carrinho,
         'qtd_pags' : qtd_pags,
-        'qtd_prods' : qtd_prods
+        'qtd_prods' : qtd_prods,
+        'banners' : banners
         }
         return render(request,"produtos/produtos.html",context)
     else:
@@ -172,8 +173,8 @@ def carrinho_view(request):
                 cache.set(session, pedidos, 60*60)
             elif request.POST.get('processa') is not None:
                 #processa pedido
-                print(request.POST.get('processa'))
-                return redirect('pedido/')
+                observacoes = request.POST.get('obs_pedido')
+                return generate_PDF(request,observacoes)
         try:
             queryset = cache.get(session)
             valor_tot = round(sum([x.valor_tot for x in queryset]),2)
@@ -199,7 +200,7 @@ def carrinho_view(request):
 
 
 
-def generate_PDF(request):
+def generate_PDF(request,observacoes):
 
     session = request.COOKIES.get('sessionid')
     queryset = cache.get(session)
@@ -210,7 +211,8 @@ def generate_PDF(request):
     data = {'object_list' : queryset,
             'data' : today,
             'valor_total' : valor_total_pedido,
-            'qtd_total' : qtd_total_pedido}
+            'qtd_total' : qtd_total_pedido,
+            'observacoes' : observacoes}
 
     template = get_template('produtos/pedido.html')
     html  = template.render(data)
@@ -274,20 +276,55 @@ def produtos_sem_imagem_view(request):
     if request.user.is_authenticated:
         prods = prods_sem_imagem()
         context = {
-            'produtos' : prods
+            'produtos' : prods,
+            'qtd' : len(prods)
         }
         return render(request,"produtos/prods_sem_img.html",context)
     else:
         return redirect('/login')
 
 def upload_img(request):
-    if request.method == 'POST' and request.FILES['myfile']:
-        myfile = request.FILES['myfile']
-        fs = FileSystemStorage()
-        filename = fs.save('static/imports/'+myfile.name, myfile)
-        uploaded_file_url = fs.url(filename)
-        return render(request, 'produtos/upload.html', {
-            'uploaded_file_url': uploaded_file_url
-        })
-    return render(request, 'produtos/upload.html')
+    if request.user.is_authenticated:
+        session = request.COOKIES.get('sessionid')
+        dir_imports = 'static/imports/'
+        dir_imports_session = dir_imports + session+'/' #pasta para sessao para nao ter conflito na importacao
+        dir_imgs = 'static/imgs/'
+        if request.method == 'POST':
+            try:
+                myfile = request.FILES['myfile']
+            except:
+                return render(request, 'produtos/upload.html')
+            fs = FileSystemStorage() 
+            filename = fs.save(dir_imports+myfile.name, myfile) # salva arquivo
+            zip_ref = zipfile.ZipFile(filename)
+            zip_ref.extractall(dir_imports_session) # extrai para pasta da sessao
+            zip_ref.close()
+            os.remove(filename) #exlui arquivo zip
+            fotos = glob.glob(dir_imports_session+'**/*.jpg', recursive=True) # busca todos os arquivos jpg recursivamente
+            cont_novas = 0
+            cont_atualiz = 0
+            for f in fotos:
+                
+                novo_path = dir_imgs+os.path.basename(f)
+                if glob.glob(novo_path):
+                    cont_atualiz = cont_atualiz+1
+                else:
+                    cont_novas = cont_novas+1
+                print(novo_path)
+                os.replace(f, novo_path) # move para a pasta imgs
 
+            shutil.rmtree(dir_imports_session) #exclui pasta sessao
+            return render(request, 'produtos/upload.html', {
+                'novas': cont_novas,
+                'atualizadas' : cont_atualiz
+            })
+        return render(request, 'produtos/upload.html')
+    else:
+        return redirect('/login')    
+
+def limpa_cache(request):
+    if request.user.is_authenticated:
+        cache.delete("dados")
+        return redirect('home') 
+    else:
+        return redirect('/login')    

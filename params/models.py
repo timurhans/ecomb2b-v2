@@ -16,3 +16,10 @@ class ColecaoErp(models.Model):
     colecaoB2b        = models.ForeignKey(ColecaoB2b, null=False, blank=False, on_delete=models.CASCADE)
     def __str__(self):
         return str(self.codigo)
+
+class Banner(models.Model):
+    ordem = models.IntegerField(null=False, blank=False,unique=True)
+    url = models.CharField(max_length=150)
+    img = models.ImageField(upload_to = 'static/banners/', null=False, blank=False)
+    def __str__(self):
+        return str(self.url)

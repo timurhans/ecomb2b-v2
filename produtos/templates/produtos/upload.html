@@ -9,9 +9,15 @@
     <button type="submit">Upload</button>
   </form>
 
-  {% if uploaded_file_url %}
-    <p>File uploaded at: <a href="{{ uploaded_file_url }}">{{ uploaded_file_url }}</a></p>
+  {% if novas > 0 or atualizadas > 0 %}
+    <p>Imagens Novas at: <a>{{ novas }}</a></p>
+    <p>Imagens Atualizadas at: <a>{{ atualizadas }}</a></p>
   {% endif %}
+
+  <!-- {% if atualizadas %}
+  <p>Imagens Novas at: <a>{{ novas }}</a></p>
+  <p>Imagens Atualizadas at: <a>{{ atualizadas }}</a></p>
+  {% endif %} -->
 
   <p><a href="{% url 'home' %}">Return to home</a></p>
 {% endblock %}

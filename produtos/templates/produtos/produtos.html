@@ -10,7 +10,17 @@
 <h7 class="text-secondary">Página {{page_obj.number}} de {{qtd_pags}} - {{ qtd_prods }} produto(s) </h7>
 <hr></hr>
 {% elif selected_cat == '' %}
-<p class="h6 text-success" style="text-align:center">Selecione uma Categoria no Menu</p>
+{% for ban in banners %}
+<!-- <p>
+  {{ ban.url }}
+  <img src= "{{ ban.img }}"" width=330 height=100% href="{{ ban.url }}"">
+</p> -->
+<div class="text-center">
+<a href="{{ ban.url }}"">
+  <img src="{{ ban.img }}"" width=350 height=100%>
+</a>
+</div>
+{% endfor %}
 {% else %}
 <h7 class="text-secondary">Página 0 de 0 - 0 produto(s) </h7>
 <hr></hr>

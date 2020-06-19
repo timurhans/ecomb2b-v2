@@ -5,16 +5,42 @@
 {% block content %}
 
 <div class="sticky-top container bg-success text-white">
-  <form method="post" target="_blank">{% csrf_token %}
     <table class="table">
       <tr>
         <th scope="row" class="text-light">Qtd {{ qtd_tot }}</th>
         <th scope="row" class="text-light">Valor R$ {{ valor_tot }}</th>
-        <td><input type="submit" id="processa" name="processa" value="Processar"></td>
+        <td>
+          <button type="button" class="btn  btn-light text-success" data-toggle="modal" data-target="#processa_pedido">
+          Gerar Pedido
+        </button>
+        </td>
       </tr> 
     </table>
-  </form>
-  <!-- <a> Valor {{ valor_tot }} - Qtd {{ qtd_tot }}</a> -->
+</div>
+
+<div class="modal fade" id="processa_pedido" tabindex="-1" role="dialog" aria-labelledby="exampleModalLongTitle" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLongTitle">{{ instance.produto.produto }}</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>Observacoes do Pedido</p>
+        <form method="post" id="usrform">{% csrf_token %}
+          <!-- <textarea name="obs_pedido" rows="20" cols="50">
+          </textarea>
+          <br></br> -->
+          <!-- <input type="text" name="obs_pedido" rows="20" cols="50"> -->
+          <textarea rows="20" cols="50" name="obs_pedido" form="usrform"></textarea>
+          <br></br>
+          <input type="submit" name="processa" value="Processa" class="bg-success text-white">
+        </form>
+      </div>
+    </div>
+  </div>
 </div>
 <div class='row'>
     {% for instance in object_list %}

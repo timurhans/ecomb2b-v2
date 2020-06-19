@@ -245,9 +245,7 @@ def produtos_col_cat(tabela,colecao,categoria):
     prods = list(filter(lambda x: x.colecao in cols_erp, prods))
 
     prods = list(filter(lambda x: x.categoria == categoria, prods))
-    print(len(prods))
     prods = list(filter(lambda x: x.tabela == tabela, prods))
-    print(len(prods))
 
     return prods
 
