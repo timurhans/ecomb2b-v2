@@ -77,7 +77,7 @@ def produtos_disp():
         ep.ES1,ep.ES2,ep.ES3,ep.ES4,ep.ES5,ep.ES6,ep.ES7,ep.ES8,ep.ES9,ep.ES10,ep.ES11,ep.ES12
         order by pp.CODIGO_TAB_PRECO,p.PRODUTO,ep.COR_PRODUTO
     """%(tabelas,cols_erp)
-    
+
     prods = pd.read_sql(query,conn)
     
     prods['PRODUTO'] = prods['PRODUTO'].str.strip()

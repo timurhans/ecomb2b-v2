@@ -15,11 +15,17 @@
   {{ ban.url }}
   <img src= "{{ ban.img }}"" width=330 height=100% href="{{ ban.url }}"">
 </p> -->
-<div class="text-center">
+<div class="container-fluid banner">
+  <a href="{{ ban.url }}"">
+    <img src="{{ ban.img }}"" width=100% height=100%>
+  </a>
+</div>
+
+<!-- <div class="text-center">
 <a href="{{ ban.url }}"">
   <img src="{{ ban.img }}"" width=350 height=100%>
 </a>
-</div>
+</div> -->
 {% endfor %}
 {% else %}
 <h7 class="text-secondary">Página 0 de 0 - 0 produto(s) </h7>

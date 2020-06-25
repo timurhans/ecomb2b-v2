@@ -6,6 +6,7 @@ from django.http import HttpResponse
 from django.core.cache import cache
 from .ondas import (Produto,Estoque,produtos_col_cat,
 produtos_col_subcat,cats_subcats,get_produto,prods_sem_imagem)
+from .models import Eventos
 from .forms import LoginForm
 from reportlab.pdfgen import canvas
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
@@ -23,17 +24,32 @@ from django.conf import settings
 import os, zipfile
 import glob
 import shutil
+from djqscsv import render_to_csv_response
+import json
+
 
 # Create your views here.
 
 class ItemPedido():
     pass
 
+def get_client_ip(request):
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
+def registra_log(user,ip,tipo):
+    Eventos.objects.create(user = user,ip = ip, tipo = tipo)
+
 def adciona_carrinho(request):
 
     tabela=request.user.first_name
     session = request.COOKIES.get('sessionid')
     pedido = Produto()
+
 
     produto = request.POST.get('produto')
     pedido.produto = get_produto(produto,tabela)
@@ -90,6 +106,7 @@ def produtos(request):
         qtd_carrinho = 0
 
     if request.user.is_authenticated:
+
 
         if request.method == 'POST':
             adciona_carrinho(request)
@@ -173,6 +190,8 @@ def carrinho_view(request):
                 cache.set(session, pedidos, 60*60)
             elif request.POST.get('processa') is not None:
                 #processa pedido
+                ip = get_client_ip(request)
+                registra_log(request.user.username,ip,'processa_pedido')
                 observacoes = request.POST.get('obs_pedido')
                 return generate_PDF(request,observacoes)
         try:
@@ -237,7 +256,10 @@ def html_pedido(request):
     return render(request,"produtos/pedido.html",data)
 
 def login_view(request):
-
+    
+    if request.user.is_authenticated:
+        return redirect('home')
+    
     if request.method == 'POST':
         form = LoginForm(request.POST)
         if form.is_valid():
@@ -246,6 +268,8 @@ def login_view(request):
             try:
                 user = authenticate(username=username, password=password)
                 login(request, user)
+                ip = get_client_ip(request)
+                registra_log(user.username,ip,'login')
                 return redirect('home')
             except:
                 form = LoginForm()
@@ -271,17 +295,6 @@ def logout_view(request):
     logout(request)
     return redirect('home')
 
-def produtos_sem_imagem_view(request):
-
-    if request.user.is_authenticated:
-        prods = prods_sem_imagem()
-        context = {
-            'produtos' : prods,
-            'qtd' : len(prods)
-        }
-        return render(request,"produtos/prods_sem_img.html",context)
-    else:
-        return redirect('/login')
 
 def upload_img(request):
     if request.user.is_authenticated:
@@ -327,4 +340,30 @@ def limpa_cache(request):
         cache.delete("dados")
         return redirect('home') 
     else:
-        return redirect('/login')    
+        return redirect('/login')
+
+
+def users_log(request):
+    try:
+        user = request.GET['user']
+        pwd = request.GET['pwd']
+        user = authenticate(username=user, password=pwd)
+        if user.is_superuser:
+            log = Eventos.objects.all()
+            return render_to_csv_response(log)
+        else:
+            return redirect('/login')
+    except:
+        return redirect('/login')
+
+def produtos_sem_imagem_view(request):
+
+    if request.user.is_authenticated:
+        prods = prods_sem_imagem()
+        context = {
+            'produtos' : prods,
+            'qtd' : len(prods)
+        }
+        return render(request,"produtos/prods_sem_img.html",context)
+    else:
+        return redirect('/login')
