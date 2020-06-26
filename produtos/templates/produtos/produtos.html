@@ -37,49 +37,26 @@
 <div class='row'>
     {% for instance in page_obj %}
     <div class="col-lg-3 col-md-6 mb-4">
-        <!-- <div class='col my-3'> -->
             <div class="card product-card">
                 <div class="card-body-fluid">
                     <div class="bg-light">
-                      <!-- <h5 class="card-title">{{ instance.produto }}</h5>
-                      <h6 class="card-text text-success"> {{ instance.preco }}</h6> -->
                       <p>
                         <b>{{ instance.produto }} -</b> <strong class="text-success" > {{ instance.preco }}</strong><br />
                         <small>{{ instance.sortido }} -</small><small class="text-lowercase"> {{ instance.composicao }} </small>
                         
                       </p>
                       <p></p>
-                      <!-- <p class="card-text">{{ instance.sortido }}</p>
-                      <p class="card-text">{{ instance.composicao }}</p> -->
                     </div>
-                      <img src="{% static instance.url " " %}" width=330 height=100%>
-                      <div class="table-responsive">
-                        <table class="table table-sm">
-                            <thead class="thead bg-light">
-                              <tr>
-                                <th scope="col">COR</th>
-                                {% for t in instance.tams %}
-                                <th scope="col">{{ t }}</th>
-                                {% endfor %}
-                              </tr>
-                            </thead>
-                            <tbody>
-                                {% for estq in instance.estoque %}
-                              <tr>
-                                <th scope="row">{{ estq.cor }}</th>
-                                {% for q in estq.qtds %}
-                                <td>{{ q }}</br></td>
-                                
-                                {% endfor %}
-                              </tr>
-                              {% endfor %}
-                            </tbody>
-                        </table>
+                    <div class="container-fluid banner">
+                        <img src="{% static instance.url " " %}" width=330 height=100%>
+                    </div>
+                    
+                      <div class="d-flex justify-content-center">
+                        <button type="button" class="btn btn-success" data-toggle="modal" data-target="#X{{ instance.produto_modal }}X">
+                          Comprar
+                        </button>
                       </div>
 
-                    <button type="button" class="btn btn-success" data-toggle="modal" data-target="#X{{ instance.produto_modal }}X">
-                      Comprar
-                    </button>
                     
                     <!-- Modal -->
                     <div class="modal fade" id="X{{ instance.produto_modal }}X" tabindex="-1" role="dialog" aria-labelledby="exampleModalLongTitle" aria-hidden="true">
@@ -94,12 +71,9 @@
                           <div class="modal-body">
                             <form method="post" >{% csrf_token %}
                               <input type="hidden" id="produto" name="produto" value={{instance.produto}}>
-                              <!-- <input type="hidden" id="tams" name="tams" value= "{{instance.tams}}">
-                              <input type="hidden" id="url" name="url" value= "{{instance.url}}">
-                              <input type="hidden" id="sortido" name="sortido" value= "{{instance.sortido}}">
-                              <input type="hidden" id="composicao" name="composicao" value= "{{instance.composicao}}">
-                              <input type="hidden" id="preco" name="preco" value= "{{instance.preco}}"> -->
-                              <img src="{% static instance.url " " %}" width=330 height=100%>
+                              <div class="container-fluid banner">
+                                <img src="{% static instance.url " " %}" width=330 height=100%>
+                              </div>
                               <div class="table-responsive">
                                 <table class="table table-sm">
                                     <thead class="thead bg-light">

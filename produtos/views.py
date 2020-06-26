@@ -26,6 +26,7 @@ import glob
 import shutil
 from djqscsv import render_to_csv_response
 import json
+import csv
 
 
 # Create your views here.
@@ -96,7 +97,7 @@ def produtos(request):
     colecoes = list(ColecaoB2b.objects.filter(active=True).order_by('ordem').values_list('title', flat=True).distinct())
     banners = Banner.objects.all().order_by('ordem')
 
-    page_size = 12
+    page_size = 16
 
     session = request.COOKIES.get('sessionid')
     lista_carrinho = cache.get(session)
@@ -297,7 +298,9 @@ def logout_view(request):
 
 
 def upload_img(request):
-    if request.user.is_authenticated:
+
+
+    if request.user.is_superuser:
         session = request.COOKIES.get('sessionid')
         dir_imports = 'static/imports/'
         dir_imports_session = dir_imports + session+'/' #pasta para sessao para nao ter conflito na importacao
@@ -356,14 +359,15 @@ def users_log(request):
     except:
         return redirect('/login')
 
-def produtos_sem_imagem_view(request):
 
-    if request.user.is_authenticated:
-        prods = prods_sem_imagem()
-        context = {
-            'produtos' : prods,
-            'qtd' : len(prods)
-        }
-        return render(request,"produtos/prods_sem_img.html",context)
-    else:
-        return redirect('/login')
+def produtos_sem_imagem_view(request):
+    # Create the HttpResponse object with the appropriate CSV header.
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="prods_sem_img.csv"'
+    prods = prods_sem_imagem()
+    writer = csv.writer(response)
+    writer.writerow(['PRODUTO', 'COLECAO', 'DISP'])
+    for index,row in prods.iterrows():
+        writer.writerow([row['PRODUTO'], row['COLECAO'], row['DISP']])
+
+    return response

@@ -297,85 +297,112 @@ def get_produto(produto,tabela):
 
     return prod
 
+# def cats_subcats():
+
+#     key = "cats"
+
+#     if cache.get(key) is None:
+#         #Consulta BD
+#         server = '192.168.2.11'
+#         db = 'ondas800'
+#         user = 'timur'
+#         pwd = 'p$3dasony' 
+#         conn = pyodbc.connect('DRIVER=' + DRIVER + ';SERVER=' + server + ';DATABASE=' + db + ';UID=' + user + ';PWD=' + pwd)
+
+#         query = """
+#             select distinct pc.CATEGORIA_PRODUTO, psc.SUBCATEGORIA_PRODUTO 
+#             from 
+#             PRODUTOS_CATEGORIA pc left join
+#             PRODUTOS_SUBCATEGORIA psc on pc.COD_CATEGORIA=psc.COD_CATEGORIA
+            
+#             order by pc.CATEGORIA_PRODUTO
+#         """
+#         categorias = pd.read_sql(query,conn)
+
+#         categorias['CATEGORIA_PRODUTO'] = categorias['CATEGORIA_PRODUTO'].str.strip()
+#         categorias['SUBCATEGORIA_PRODUTO'] = categorias['SUBCATEGORIA_PRODUTO'].str.strip()
+
+#         cats = []
+#         cat = Produto()
+#         cat.cat = 'PRIMEIRO'
+#         cat.subcats =[]
+#         for index,row in categorias.iterrows():
+#             if cat.cat == 'PRIMEIRO':
+#                 cat.cat = row['CATEGORIA_PRODUTO']
+#                 if cat.cat == 'MASCULINO':
+#                     cat.subcats.append(row['SUBCATEGORIA_PRODUTO'])
+#             elif cat.cat == row['CATEGORIA_PRODUTO']:
+#                 if cat.cat == 'MASCULINO':
+#                     cat.subcats.append(row['SUBCATEGORIA_PRODUTO'])
+#             else:
+#                 cats.append(cat)
+#                 cat = Produto()
+#                 cat.subcats =[]
+#                 cat.cat = row['CATEGORIA_PRODUTO']
+#                 if cat.cat == 'MASCULINO':
+#                     cat.subcats.append(row['SUBCATEGORIA_PRODUTO'])
+
+#         conn.close()
+#         cache.set(key, cats, 60*60*24)
+#         print('Banco')
+#     else:
+#         #Consulta Cache
+#         cats = cache.get(key)
+#         print('Cache')
+
+#     return cats
+
 def cats_subcats():
 
     key = "cats"
 
     if cache.get(key) is None:
-        #Consulta BD
-        server = '192.168.2.11'
-        db = 'ondas800'
-        user = 'timur'
-        pwd = 'p$3dasony' 
-        conn = pyodbc.connect('DRIVER=' + DRIVER + ';SERVER=' + server + ';DATABASE=' + db + ';UID=' + user + ';PWD=' + pwd)
 
-        query = """
-            select distinct pc.CATEGORIA_PRODUTO, psc.SUBCATEGORIA_PRODUTO 
-            from 
-            PRODUTOS_CATEGORIA pc left join
-            PRODUTOS_SUBCATEGORIA psc on pc.COD_CATEGORIA=psc.COD_CATEGORIA
-            
-            
-            order by pc.CATEGORIA_PRODUTO
-        """
-        "where pc.CATEGORIA_PRODUTO <> 'ENTREGA'"
-        categorias = pd.read_sql(query,conn)
+        categorias = produtos_disp()
+        categorias = categorias[categorias['CODIGO_TAB_PRECO']=='01']
+        categorias = categorias[categorias['CATEGORIA_PRODUTO']!='ENTREGA']
+        categorias = categorias.groupby(['CATEGORIA_PRODUTO','SUBCATEGORIA_PRODUTO'],as_index=False).sum()
+        categorias = categorias[['CATEGORIA_PRODUTO','SUBCATEGORIA_PRODUTO']]
 
-        categorias['CATEGORIA_PRODUTO'] = categorias['CATEGORIA_PRODUTO'].str.strip()
-        categorias['SUBCATEGORIA_PRODUTO'] = categorias['SUBCATEGORIA_PRODUTO'].str.strip()
+        print(categorias)
 
         cats = []
         cat = Produto()
         cat.cat = 'PRIMEIRO'
         cat.subcats =[]
+
         for index,row in categorias.iterrows():
             if cat.cat == 'PRIMEIRO':
                 cat.cat = row['CATEGORIA_PRODUTO']
-                if cat.cat == 'MASCULINO':
-                    cat.subcats.append(row['SUBCATEGORIA_PRODUTO'])
+                cat.subcats.append(row['SUBCATEGORIA_PRODUTO'])
             elif cat.cat == row['CATEGORIA_PRODUTO']:
-                if cat.cat == 'MASCULINO':
-                    cat.subcats.append(row['SUBCATEGORIA_PRODUTO'])
+                cat.subcats.append(row['SUBCATEGORIA_PRODUTO'])
             else:
                 cats.append(cat)
                 cat = Produto()
                 cat.subcats =[]
                 cat.cat = row['CATEGORIA_PRODUTO']
-                if cat.cat == 'MASCULINO':
-                    cat.subcats.append(row['SUBCATEGORIA_PRODUTO'])
-
-        conn.close()
-        cache.set(key, cats, 60*24)
+                cat.subcats.append(row['SUBCATEGORIA_PRODUTO'])        
+        cats.append(cat)
+        cache.set(key, cats, 60*60*24)
         print('Banco')
     else:
         #Consulta Cache
         cats = cache.get(key)
         print('Cache')
 
-    return cats
+    return cats    
 
-    
 def prods_sem_imagem():
     
     prods = produtos_disp()
-    
+    prods = prods[prods['CODIGO_TAB_PRECO']=='01']
 
-    lista_produtos =[]
     
     for index, row in prods.iterrows():
         
-        #elimina produtos sem imagem
-        if not glob.glob('static/imgs/'+row['PRODUTO']+'.jpg'):
-                p = Produto()
-                p.produto = row['PRODUTO']
-                p.cor = row['COR_PRODUTO']
-                p.colecao = row['COLECAO']
-                p.disp = row['DISP']
-                p.tabela = row['CODIGO_TAB_PRECO']
-                lista_produtos.append(p)
-
-    lista_produtos = list(filter(lambda x: x.tabela == '01', lista_produtos))
-    lista_produtos = sorted(lista_produtos, key = lambda x: ( -x.disp))
+        #deixa somente produtos com imagem
+        if glob.glob('static/imgs/'+row['PRODUTO']+'.jpg'):
+            prods.drop(index, inplace=True)
     
-    return lista_produtos
-
+    return prods
