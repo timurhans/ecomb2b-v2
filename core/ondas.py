@@ -29,7 +29,7 @@ def produtos_disp():
 
     server = '192.168.2.11'
     db = 'ondas800'
-    user = 'sa'
+    user = 'timur'
     pwd = 'p$3dasony' 
     conn = pyodbc.connect('DRIVER=' + DRIVER + ';SERVER=' + server + ';DATABASE=' + db + ';UID=' + user + ';PWD=' + pwd)
 
@@ -226,7 +226,7 @@ def df_tolist(prods):
 
     return lista_produtos
 
-def produtos_col_cat(tabela,colecao,categoria):
+def get_produtos(tabela,colecao,categoria,subcategoria):
 
     key = "dados"
     print('chave : ' + key)
@@ -240,37 +240,15 @@ def produtos_col_cat(tabela,colecao,categoria):
         prods = cache.get(key)
 
     #Busca cols erp vinculadas a colecao b2b selecionada
-    cols_erp = list(ColecaoErp.objects.filter(colecaoB2b__title=colecao).values_list('codigo', flat=True).distinct())
+    if colecao != '':
+        cols_erp = list(ColecaoErp.objects.filter(colecaoB2b__title=colecao).values_list('codigo', flat=True).distinct()) 
+        prods = list(filter(lambda x: x.colecao in cols_erp, prods))
     
-    prods = list(filter(lambda x: x.colecao in cols_erp, prods))
+    if categoria != '':
+        prods = list(filter(lambda x: x.categoria == categoria, prods))
+    if subcategoria != '':
+        prods = list(filter(lambda x: x.subcategoria == subcategoria, prods))
 
-    prods = list(filter(lambda x: x.categoria == categoria, prods))
-    prods = list(filter(lambda x: x.tabela == tabela, prods))
-
-    return prods
-
-    
-
-def produtos_col_subcat(tabela,colecao,categoria,subcategoria):
-
-    key = "dados"
-    print('chave : ' + key)
-
-    if cache.get(key) is None:
-        prods = df_tolist(produtos_disp())         
-        cache.set(key, prods, 60*30)
-        print('Banco')
-    else:
-        print('Cache')
-        prods = cache.get(key)
-
-    #Busca cols erp vinculadas a colecao b2b selecionada
-    cols_erp = list(ColecaoErp.objects.filter(colecaoB2b__title=colecao).values_list('codigo', flat=True).distinct())
-    
-    prods = list(filter(lambda x: x.colecao in cols_erp, prods))
-    
-    prods = list(filter(lambda x: x.categoria == categoria, prods))
-    prods = list(filter(lambda x: x.subcategoria == subcategoria, prods))
     prods = list(filter(lambda x: x.tabela == tabela, prods))
 
     return prods
@@ -297,60 +275,6 @@ def get_produto(produto,tabela):
 
     return prod
 
-# def cats_subcats():
-
-#     key = "cats"
-
-#     if cache.get(key) is None:
-#         #Consulta BD
-#         server = '192.168.2.11'
-#         db = 'ondas800'
-#         user = 'timur'
-#         pwd = 'p$3dasony' 
-#         conn = pyodbc.connect('DRIVER=' + DRIVER + ';SERVER=' + server + ';DATABASE=' + db + ';UID=' + user + ';PWD=' + pwd)
-
-#         query = """
-#             select distinct pc.CATEGORIA_PRODUTO, psc.SUBCATEGORIA_PRODUTO 
-#             from 
-#             PRODUTOS_CATEGORIA pc left join
-#             PRODUTOS_SUBCATEGORIA psc on pc.COD_CATEGORIA=psc.COD_CATEGORIA
-            
-#             order by pc.CATEGORIA_PRODUTO
-#         """
-#         categorias = pd.read_sql(query,conn)
-
-#         categorias['CATEGORIA_PRODUTO'] = categorias['CATEGORIA_PRODUTO'].str.strip()
-#         categorias['SUBCATEGORIA_PRODUTO'] = categorias['SUBCATEGORIA_PRODUTO'].str.strip()
-
-#         cats = []
-#         cat = Produto()
-#         cat.cat = 'PRIMEIRO'
-#         cat.subcats =[]
-#         for index,row in categorias.iterrows():
-#             if cat.cat == 'PRIMEIRO':
-#                 cat.cat = row['CATEGORIA_PRODUTO']
-#                 if cat.cat == 'MASCULINO':
-#                     cat.subcats.append(row['SUBCATEGORIA_PRODUTO'])
-#             elif cat.cat == row['CATEGORIA_PRODUTO']:
-#                 if cat.cat == 'MASCULINO':
-#                     cat.subcats.append(row['SUBCATEGORIA_PRODUTO'])
-#             else:
-#                 cats.append(cat)
-#                 cat = Produto()
-#                 cat.subcats =[]
-#                 cat.cat = row['CATEGORIA_PRODUTO']
-#                 if cat.cat == 'MASCULINO':
-#                     cat.subcats.append(row['SUBCATEGORIA_PRODUTO'])
-
-#         conn.close()
-#         cache.set(key, cats, 60*60*24)
-#         print('Banco')
-#     else:
-#         #Consulta Cache
-#         cats = cache.get(key)
-#         print('Cache')
-
-#     return cats
 
 def cats_subcats():
 
@@ -362,28 +286,33 @@ def cats_subcats():
         categorias = categorias[categorias['CODIGO_TAB_PRECO']=='01']
         categorias = categorias[categorias['CATEGORIA_PRODUTO']!='ENTREGA']
         categorias = categorias.groupby(['CATEGORIA_PRODUTO','SUBCATEGORIA_PRODUTO'],as_index=False).sum()
-        categorias = categorias[['CATEGORIA_PRODUTO','SUBCATEGORIA_PRODUTO']]
+        categorias = categorias[['CATEGORIA_PRODUTO','SUBCATEGORIA_PRODUTO','DISP']]
 
         print(categorias)
 
         cats = []
         cat = Produto()
         cat.cat = 'PRIMEIRO'
+        cat.disp = 0
         cat.subcats =[]
 
         for index,row in categorias.iterrows():
             if cat.cat == 'PRIMEIRO':
                 cat.cat = row['CATEGORIA_PRODUTO']
                 cat.subcats.append(row['SUBCATEGORIA_PRODUTO'])
+                cat.disp = cat.disp + row['DISP']
             elif cat.cat == row['CATEGORIA_PRODUTO']:
                 cat.subcats.append(row['SUBCATEGORIA_PRODUTO'])
+                cat.disp = cat.disp + row['DISP']
             else:
                 cats.append(cat)
                 cat = Produto()
+                cat.disp = 0
                 cat.subcats =[]
                 cat.cat = row['CATEGORIA_PRODUTO']
                 cat.subcats.append(row['SUBCATEGORIA_PRODUTO'])        
         cats.append(cat)
+        cats = sorted(cats, key = lambda x: (-x.disp))
         cache.set(key, cats, 60*60*24)
         print('Banco')
     else:

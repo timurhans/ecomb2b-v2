@@ -1,3 +1,6 @@
 b2bondas.code-workspace
-static/imgs/
-static/pdfs/
+static/imgs/*
+!static/imgs/Logo-Greenish.png
+static/pdfs/*
+!static/pdfs/c1fnslecsvpfeokq7z4zluorad3yfyra
+db.sqlite3

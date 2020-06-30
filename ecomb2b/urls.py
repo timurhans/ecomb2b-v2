@@ -15,9 +15,9 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.contrib.auth import views
-from django.urls import path
-from produtos.views import (login_view,logout_view,
-produtos,carrinho_view,generate_PDF,html_pedido,
+from django.urls import path,re_path
+from core.views import (login_view,logout_view,
+produtos,carrinho_view,generate_PDF,
 produtos_sem_imagem_view,upload_img,limpa_cache,users_log)
 
 urlpatterns = [
@@ -31,8 +31,11 @@ urlpatterns = [
     path('carrinho/', carrinho_view),
     path('prods_sem_imagem/', produtos_sem_imagem_view),
     path('carrinho/pedido/', generate_PDF),
-    path('carrinho/pedido_teste/', html_pedido),
     path('upload/', upload_img),
     path('limpa_cache/', limpa_cache),
     path('log/', users_log),
 ]
+
+# urlpatterns += [
+#     re_path(r'(?P<path>.*)', produtos, name='home')
+# ]

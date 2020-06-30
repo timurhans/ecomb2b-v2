@@ -1,35 +1,31 @@
+#DJANGO IMPORTS
 from django.shortcuts import render,redirect
 from django.core.paginator import Paginator
 from django.views.generic import ListView
 from django.contrib.auth import authenticate, login, logout
 from django.http import HttpResponse
 from django.core.cache import cache
-from .ondas import (Produto,Estoque,produtos_col_cat,
-produtos_col_subcat,cats_subcats,get_produto,prods_sem_imagem)
-from .models import Eventos
-from .forms import LoginForm
-from reportlab.pdfgen import canvas
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
-from reportlab.lib import colors
-# from django_xhtml2pdf.utils import generate_pdf
-from xhtml2pdf import pisa
-from django.template import Context
 from django.template.loader import get_template
-import time
-from datetime import date
-import re
-from params.models import (ColecaoB2b,ColecaoErp,Banner)
 from django.core.files.storage import FileSystemStorage
 from django.conf import settings
+#APP IMPORTS
+from .ondas import (Produto,Estoque,cats_subcats,get_produto,prods_sem_imagem,get_produtos)
+from .models import Eventos
+from .forms import LoginForm
+from params.models import (ColecaoB2b,ColecaoErp,Banner)
+# THIRD PARTY IMPORTS
+from xhtml2pdf import pisa
+# import time
+from datetime import date
+import re
 import os, zipfile
 import glob
 import shutil
 from djqscsv import render_to_csv_response
-import json
 import csv
 
 
-# Create your views here.
+# FUNCOES AUXILIARES
 
 class ItemPedido():
     pass
@@ -92,7 +88,11 @@ def adciona_carrinho(request):
                 pedidos.append(pedido)
             cache.set(session, pedidos, 60*60)
 
-def produtos(request):
+
+
+# VIEWS DA APLICACAO
+
+def produtos(request,path=None):
 
     colecoes = list(ColecaoB2b.objects.filter(active=True).order_by('ordem').values_list('title', flat=True).distinct())
     banners = Banner.objects.all().order_by('ordem')
@@ -114,24 +114,25 @@ def produtos(request):
 
             return HttpResponse('<script>history.back();</script>')
 
-
         try:
             col = request.GET['colecao']
+        except:
+            col = ''
+        try:
             cat = request.GET['categoria']
+            print(cat)
+        except:
+            cat = ''
+        try:
             subcat = request.GET['subcategoria']
-            queryset = produtos_col_subcat(tabela=request.user.first_name,
-            colecao=col,categoria=cat,subcategoria=subcat)
         except:
             subcat = ''
-            try:
-                col = request.GET['colecao']
-                cat = request.GET['categoria']
-                queryset = produtos_col_cat(tabela=request.user.first_name,
-                    colecao=col,categoria=cat)
-            except:
-                col = ''
-                cat = ''
-                queryset =[]
+
+        if cat != '':
+            queryset = get_produtos(tabela=request.user.first_name,
+            colecao=col,categoria=cat,subcategoria=subcat)
+        else:
+            queryset = []
                 
         paginator = Paginator(queryset, page_size)
         page_number = request.GET.get('page')
@@ -158,7 +159,7 @@ def produtos(request):
         'qtd_prods' : qtd_prods,
         'banners' : banners
         }
-        return render(request,"produtos/produtos.html",context)
+        return render(request,"core/produtos.html",context)
     else:
         print(request)
         return redirect('/login')
@@ -213,7 +214,7 @@ def carrinho_view(request):
         'qtd_tot' : qtd_tot,
         'qtd_carrinho' : qtd_carrinho
         }
-        return render(request,"produtos/carrinho.html",context)
+        return render(request,"core/carrinho.html",context)
     else:
         print(request)
         return redirect('/login')
@@ -232,9 +233,10 @@ def generate_PDF(request,observacoes):
             'data' : today,
             'valor_total' : valor_total_pedido,
             'qtd_total' : qtd_total_pedido,
-            'observacoes' : observacoes}
+            'observacoes' : observacoes
+            }
 
-    template = get_template('produtos/pedido.html')
+    template = get_template('core/pedido.html')
     html  = template.render(data)
 
     file_path = 'static/pdfs/'+session
@@ -248,13 +250,6 @@ def generate_PDF(request,observacoes):
     return HttpResponse(pdf, 'application/pdf')
 
 
-def html_pedido(request):
-
-    session = request.COOKIES.get('sessionid')
-    queryset = cache.get(session)
-    data = {'object_list' : queryset}
-
-    return render(request,"produtos/pedido.html",data)
 
 def login_view(request):
     
@@ -278,7 +273,7 @@ def login_view(request):
                     'form' : form,
                     'erro_login' : 'erro'
                 }
-                return render(request,"produtos/login.html",context)
+                return render(request,"core/login.html",context)
 
     else:
         form = LoginForm()
@@ -286,7 +281,7 @@ def login_view(request):
             'form' : form
         }
 
-        return render(request,"produtos/login.html",context)
+        return render(request,"core/login.html",context)
 
 
 
@@ -309,7 +304,7 @@ def upload_img(request):
             try:
                 myfile = request.FILES['myfile']
             except:
-                return render(request, 'produtos/upload.html')
+                return render(request, 'core/upload.html')
             fs = FileSystemStorage() 
             filename = fs.save(dir_imports+myfile.name, myfile) # salva arquivo
             zip_ref = zipfile.ZipFile(filename)
@@ -330,11 +325,11 @@ def upload_img(request):
                 os.replace(f, novo_path) # move para a pasta imgs
 
             shutil.rmtree(dir_imports_session) #exclui pasta sessao
-            return render(request, 'produtos/upload.html', {
+            return render(request, 'core/upload.html', {
                 'novas': cont_novas,
                 'atualizadas' : cont_atualiz
             })
-        return render(request, 'produtos/upload.html')
+        return render(request, 'core/upload.html')
     else:
         return redirect('/login')    
 
